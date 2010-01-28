@@ -67,28 +67,6 @@ function rules_web_access_callback($op, $entity_type, $entity = NULL, $account =
   return user_access('administer web hooks', $account);
 }
 
-/**
- * Implements hook_services_resources().
- */
-function rules_web_services_resources() {
-  $crud_object = new EntityResourceServicesCRUD('rules_web_hook');
-  $resources['rules_web_hook']['index'] = array(
-    'callback' => 'rules_web_list_hooks',
-    'args' => array(),
-    'models' => array(),
-    'access callback' => array($crud_object, 'access'),
-    'access arguments' => array('view'),
-  );
-  return $resources;
-}
-
-/**
- * Service resource callback: Index all web hooks.
- */
-function rules_web_list_hooks() {
-  return entity_load('rules_web_hook', FALSE, array('active' => TRUE));
-}
-
 
 function rules_web_default_rules_web_hook() {
 

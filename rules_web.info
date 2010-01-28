@@ -5,5 +5,7 @@ package = Rules
 version = VERSION
 core = 7.x
 files[] = rules_web.module
+files[] = rules_web.install
+files[] = rules_web.services.inc
 dependencies[] = rules
 dependencies[] = services (3.x)
