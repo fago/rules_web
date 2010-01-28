@@ -1,0 +1,8 @@
+; $Id$
+name = Web Hooks
+description = Define and make use of Web Hooks with Rules.
+package = Rules
+version = VERSION
+core = 7.x
+files[] = rules_web.module
+dependencies[] = rules

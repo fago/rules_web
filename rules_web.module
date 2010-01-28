@@ -1,0 +1,42 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules Web Hooks - Module file.
+ */
+
+/**
+ * Implementation of hook_entity_info().
+ */
+function rules_web_entity_info() {
+  return array(
+    'rules_web_hook' => array(
+      'label' => t('Web hook'),
+      'controller class' => 'RulesEntityController',
+      'base table' => 'rules_web_hook',
+      'fieldable' => TRUE,
+      'object keys' => array(
+        'id' => 'id',
+        'name' => 'name',
+        'bundle' => 'name',
+      ),
+      'bundles' => array(),
+      'exportable' => TRUE,
+    ),
+    'rules_web_remote' => array(
+      'label' => t('Remote site'),
+      'controller class' => 'RulesEntityController',
+      'base table' => 'rules_web_remote',
+      'fieldable' => TRUE,
+      'object keys' => array(
+        'id' => 'id',
+        'name' => 'name',
+        'bundle' => 'name',
+      ),
+      'bundles' => array(),
+      'exportable' => TRUE,
+    ),
+  );
+}
+
+
