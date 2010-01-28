@@ -35,6 +35,24 @@ function rules_web_remote_schema() {
         'not null' => TRUE,
         'description' => 'The label of the remote site.',
       ),
+      'url' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'description' => 'The url of the remote site.',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'description' => 'The type of the remote endpoint.',
+      ),
+      'settings' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'serialize' => TRUE,
+        'description' => 'The endpoint type specific settings.',
+      ),
       'authentication' => array(
         'type' => 'text',
         'not null' => FALSE,

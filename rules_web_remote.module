@@ -12,6 +12,7 @@ function rules_web_remote_entity_info() {
   return array(
     'rules_web_remote' => array(
       'label' => t('Remote site'),
+      'entity class' => 'RulesWebRemoteSite',
       'controller class' => 'EntityAPIController',
       'base table' => 'rules_web_remote',
       'fieldable' => TRUE,
@@ -42,4 +43,105 @@ function rules_web_remote_permission() {
   return $permissions;
 }
 
+/**
+ * Gets all defined remote endpoint types.
+ */
+function rules_web_remote_get_types() {
+  return module_invoke_all('rules_endpoint_types');
+}
+
+/**
+ * Implements hook_rules_endpoint_types().
+ */
+function rules_web_remote_rules_endpoint_types() {
+  return array(
+    'rules_web_hook' => array(
+      'label' => t('Rules Web Hooks'),
+      'class' => 'RulesWebRemoteEndpointWebHooks',
+    ),
+  );
+}
+
+/**
+ * Class representing remote sites.
+ */
+class RulesWebRemote extends EntityDB {
+  
+  public $settings = array();
+  public $name;
+  public $label;
+  public $url;
+  
+  protected $endpoint = NULL;
+  
+  function __construct($values = array(), $entity_type = 'rules_web_remote') {
+    parent::__construct($values, $entity_type);
+  }
+  
+  public function access($account = NULL) {
+    return user_access('interact with remote ' . $this->name, $account);
+  }
+  
+  /**
+   * @return RulesWebRemoteEndpointInterface
+   */
+  protected function endpoint() {
+    if (!isset($this->endpoint)) {
+      $this->endpoint = new $this->type($this);
+    }
+    return $this->endpoint;
+  }
+  
+  public function events() {
+    return $this->endpoint()->events();
+  }
+  
+  public function dataTypes() {
+    return $this->endpoint()->dataTypes();
+  }
+  
+  public function actions() {
+    return $this->endpoint()->actions();
+  }
+  
+  public function conditions() {
+    return $this->endpoint()->conditions();
+  }
+}
+
+/**
+ * Interface for remote endpoints.
+ */
+interface RulesWebRemoteEndpointInterface {
+  
+  public function events();
+  
+  public function dataTypes();
+  
+  public function actions();
+  
+  public function conditions();
+}
+
+/**
+ * A remote endpoint types for rules web hooks.
+ */
+class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface {
+  
+  public function events() {
+    
+  }
+  
+  public function dataTypes() {
+    
+  }
+  
+  public function actions() {
+    
+  }
+  
+  public function conditions() {
+    
+  }
+}
 
