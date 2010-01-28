@@ -12,7 +12,7 @@ function rules_web_entity_info() {
   return array(
     'rules_web_hook' => array(
       'label' => t('Web hook'),
-      'controller class' => 'RulesEntityController',
+      'controller class' => 'EntityAPIController',
       'base table' => 'rules_web_hook',
       'fieldable' => TRUE,
       'object keys' => array(
@@ -22,10 +22,11 @@ function rules_web_entity_info() {
       ),
       'bundles' => array(),
       'exportable' => TRUE,
+      'access callback' => 'rules_web_access_callback',
     ),
     'rules_web_remote' => array(
       'label' => t('Remote site'),
-      'controller class' => 'RulesEntityController',
+      'controller class' => 'EntityAPIController',
       'base table' => 'rules_web_remote',
       'fieldable' => TRUE,
       'object keys' => array(
@@ -39,4 +40,69 @@ function rules_web_entity_info() {
   );
 }
 
+/**
+ * Implements hook_permission().
+ */
+function rules_web_permission() {
+  return array(
+    'administer web hooks' =>  array(
+      'title' => t('Administer web hooks'),
+      'description' => t('Define web hooks and administer remote sites.'),
+    ),
+    'use web hooks' =>  array(
+      'title' => t('Make use of web hooks'),
+    ),
+  );
+}
+
+/**
+ * An access callback for the rules web entities.
+ *
+ * @see rules_web_entity_info()
+ */
+function rules_web_access_callback($op, $entity_type, $entity = NULL, $account = NULL) {
+  if ($op == 'view' && $entity_type == 'rules_web_hook') {
+    return user_access('use web hooks', $account);
+  }
+  return user_access('administer web hooks', $account);
+}
+
+/**
+ * Implements hook_services_resources().
+ */
+function rules_web_services_resources() {
+  $crud_object = new EntityResourceServicesCRUD('rules_web_hook');
+  $resources['rules_web_hook']['index'] = array(
+    'callback' => 'rules_web_list_hooks',
+    'args' => array(),
+    'models' => array(),
+    'access callback' => array($crud_object, 'access'),
+    'access arguments' => array('view'),
+  );
+  return $resources;
+}
+
+/**
+ * Service resource callback: Index all web hooks.
+ */
+function rules_web_list_hooks() {
+  return entity_load('rules_web_hook', FALSE, array('active' => TRUE));
+}
+
+
+function rules_web_default_rules_web_hook() {
+
+  $hook = new EntityDB(array(), 'rules_web_hook');
+  $hook->name = 'test';
+  $hook->label = 'A test hook.';
+  $hook->active = TRUE;
+  $hook->variables = array(
+    'node' => array(
+      'type' => 'node',
+      'label' => 'Content',
+    ),
+  );
+  $hooks[$hook->name] = $hook;
+  return $hooks;
+}
 
