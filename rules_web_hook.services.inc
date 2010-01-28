@@ -9,11 +9,11 @@
 /**
  * Implements hook_services_resources().
  */
-function rules_web_services_resources() {
+function rules_web_hook_services_resources() {
   $crud_object = new EntityResourceServicesCRUD('rules_web_hook');
   $resources['rules_web_hook']['index'] = array(
     'file' => array('type' => 'inc', 'module' => 'rules_web', 'name' => 'rules_web.services'),
-    'callback' => 'rules_web_list_hooks',
+    'callback' => 'rules_web_hook_list_hooks',
     'args' => array(),
     'models' => array(),
     'access callback' => array($crud_object, 'access'),
@@ -21,7 +21,7 @@ function rules_web_services_resources() {
   );
   $resources['entity_metadata']['index'] = array(
     'file' => array('type' => 'inc', 'module' => 'rules_web', 'name' => 'rules_webservices'),
-    'callback' => 'rules_web_list_entity_metadata',
+    'callback' => 'rules_web_hook_list_entity_metadata',
     'args' => array(),
     'models' => array(),
     'access callback' => array($crud_object, 'access'),
@@ -33,7 +33,7 @@ function rules_web_services_resources() {
 /**
  * Service resource callback: Index all web hooks.
  */
-function rules_web_list_hooks() {
+function rules_web_hook_list_hooks() {
   return entity_load('rules_web_hook', FALSE, array('active' => TRUE));
 }
 
@@ -42,7 +42,7 @@ function rules_web_list_hooks() {
  * current user has access to use it - so the user isn't aware of unaccesible
  * entities / properties.
  */
-function rules_web_list_entity_metadata() {
+function rules_web_hook_list_entity_metadata() {
   $info = entity_get_info();
   $return = array();
   foreach ($info as $type => $entity_info) {

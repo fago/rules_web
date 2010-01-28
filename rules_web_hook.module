@@ -8,7 +8,7 @@
 /**
  * Implementation of hook_entity_info().
  */
-function rules_web_entity_info() {
+function rules_web_hook_entity_info() {
   return array(
     'rules_web_hook' => array(
       'label' => t('Web hook'),
@@ -22,20 +22,7 @@ function rules_web_entity_info() {
       ),
       'bundles' => array(),
       'exportable' => TRUE,
-      'access callback' => 'rules_web_access_callback',
-    ),
-    'rules_web_remote' => array(
-      'label' => t('Remote site'),
-      'controller class' => 'EntityAPIController',
-      'base table' => 'rules_web_remote',
-      'fieldable' => TRUE,
-      'object keys' => array(
-        'id' => 'id',
-        'name' => 'name',
-        'bundle' => 'name',
-      ),
-      'bundles' => array(),
-      'exportable' => TRUE,
+      'access callback' => 'rules_web_hook_access_callback',
     ),
   );
 }
@@ -43,7 +30,7 @@ function rules_web_entity_info() {
 /**
  * Implements hook_permission().
  */
-function rules_web_permission() {
+function rules_web_hook_permission() {
   return array(
     'administer web hooks' =>  array(
       'title' => t('Administer web hooks'),
@@ -60,15 +47,15 @@ function rules_web_permission() {
  *
  * @see rules_web_entity_info()
  */
-function rules_web_access_callback($op, $entity_type, $entity = NULL, $account = NULL) {
-  if ($op == 'view' && $entity_type == 'rules_web_hook') {
+function rules_web_hook_access_callback($op, $entity_type, $entity = NULL, $account = NULL) {
+  if ($op == 'view') {
     return user_access('use web hooks', $account);
   }
   return user_access('administer web hooks', $account);
 }
 
 
-function rules_web_default_rules_web_hook() {
+function rules_web_hook_default_rules_web_hook() {
 
   $hook = new EntityDB(array(), 'rules_web_hook');
   $hook->name = 'test';

@@ -1,0 +1,9 @@
+; $Id$
+name = Remote sites
+description = Interact with remote sites using rules, e.g. by reacting on web hooks.
+package = Rules
+version = VERSION
+core = 7.x
+files[] = rules_web_remote.module
+files[] = rules_web_remote.install
+dependencies[] = rules

@@ -5,10 +5,15 @@
  * @file Rules Web Hooks - Installation file.
  */
 
+function rules_web_hook_enable() {
+  // Force clearing module implements cache.
+  module_implements('services_resources', FALSE, TRUE);
+}
+
 /**
  * Implementation of hook_schema().
  */
-function rules_web_schema() {
+function rules_web_hook_schema() {
   $schema['rules_web_hook'] = array(
     'fields' => array(
       'id' => array(
@@ -44,37 +49,6 @@ function rules_web_schema() {
     'primary key' => array('id'),
     'unique keys' => array(
       'name' => array('name'),
-    ),
-  );
-  $schema['rules_web_remote'] = array(
-    'fields' => array(
-      'id' => array(
-        'type' => 'serial',
-        'not null' => TRUE,
-        'description' => 'The primary identifier for the remote site.',
-      ),
-      'name' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-        'description' => 'The name of the remote site.',
-      ),
-      'label' => array(
-        'type' => 'varchar',
-        'length' => '255',
-        'not null' => TRUE,
-        'description' => 'The label of the remote site.',
-      ),
-      'authentication' => array(
-        'type' => 'text',
-        'not null' => FALSE,
-        'serialize' => TRUE,
-        'description' => 'Data describing the authentication method.',
-      ),
-    ),
-    'primary key' => array('id'),
-    'foreign keys' => array(
-      'id' => array('rules_config' => 'id'),
     ),
   );
   return $schema;

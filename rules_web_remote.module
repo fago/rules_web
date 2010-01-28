@@ -1,0 +1,45 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules Remote Sites - Module file.
+ */
+
+/**
+ * Implementation of hook_entity_info().
+ */
+function rules_web_remote_entity_info() {
+  return array(
+    'rules_web_remote' => array(
+      'label' => t('Remote site'),
+      'controller class' => 'EntityAPIController',
+      'base table' => 'rules_web_remote',
+      'fieldable' => TRUE,
+      'object keys' => array(
+        'id' => 'id',
+        'name' => 'name',
+        'bundle' => 'name',
+      ),
+      'bundles' => array(),
+      'exportable' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function rules_web_remote_permission() {
+  $permissions['administer remote sites'] = array(
+    'title' => t('Administer remote sites'),
+    'description' => t('Administer remote sites used with rules.'),
+  );
+  foreach (entity_load('rules_web_remote', FALSE) as $name => $remote) {
+    $permissions['interact with remote ' . $name] = array(
+      'title' => t('Interact with remote site %label', array('%label' => $remote->label)),
+    );
+  }
+  return $permissions;
+}
+
+
