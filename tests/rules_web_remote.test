@@ -1,0 +1,84 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules Web Remote Tests
+ */
+
+class RulesWebHooksTestCase extends DrupalWebTestCase {
+
+  static function getInfo() {
+    return array(
+      'name' => 'Rules Web',
+      'description' => 'Tests providing and using rules web hooks.',
+      'group' => 'Rules',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('rules_web_test');
+  }
+
+  /**
+   * Calculates the output of t() given an array of placeholders to replace.
+   */
+  static function t($text, $strings) {
+    $placeholders = array();
+    foreach ($strings as $string) {
+      $placeholders['%' . $string] = drupal_placeholder(array('text' => $string));
+    }
+    return strtr($text, $placeholders);
+  }
+  
+  /**
+   * Returns a remote site object for this site. Note that we don't use
+   * the default hook to provide this as it would result in issueing a page
+   * request during entity-info cache refresh on our site, which 'd result in
+   * a nice end-less loop.
+   */
+  protected function getSelfRemoteSiteObject() {
+    $remote = new RulesWebRemote();
+    $remote->name = 'self';
+    $remote->label = 'The local drupal site.';
+    $remote->url = $GLOBALS['base_url'];
+    $remote->type = 'rules_web_hook';
+    $remote->settings = array(
+      'curl options' => array(
+        // For testing skip ssl verification.
+        CURLOPT_SSL_VERIFYPEER => FALSE,
+        CURLOPT_SSL_VERIFYHOST => FALSE,
+        // For testing just keep the current session.
+        CURLOPT_COOKIE => $this->session_name . '=' . $this->session_id,
+      ),
+    );
+    // Add in the simpletest http auth credentials, if any.
+    if (isset($this->httpauth_credentials)) {
+      $remote->settings['curl options'] += array(
+        CURLOPT_HTTPAUTH => $this->httpauth_method,
+        CURLOPT_USERPWD => $this->httpauth_credentials,
+      );
+    }
+    // Add the simpletest useragent so we connect to the testing instance.
+    if (preg_match('/simpletest\d+/', $GLOBALS['db_prefix'], $matches)) {
+      $remote->settings['curl options'][CURLOPT_USERAGENT] = drupal_generate_test_ua($matches[0]);
+    }
+    return $remote;
+  }
+  
+  function createAdmin() {
+    $perms = array_keys(module_invoke_all('permission'));
+    return $this->drupalCreateUser($perms);
+  }
+ 
+  /**
+   * Basic tests.
+   */
+  function testBasicService() {
+    $user = $this->createAdmin();
+    $this->drupalLogin($user);
+    
+    $remote = $this->getSelfRemoteSiteObject();
+    module_load_include('inc', 'rules_web_hook', 'rules_web_hook.services');
+    $this->assertTrue($remote->dataTypes() == rules_web_hook_list_entity_metadata(), 'Data types returned.');
+  }
+}

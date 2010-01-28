@@ -1,0 +1,25 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules Web Test Module.
+ */
+
+/**
+ * Implementation of hook_default_rules_web_hook().
+ */
+function rules_web_test_default_rules_web_hook() {
+  $hook = new EntityDB(array(), 'rules_web_hook');
+  $hook->name = 'test';
+  $hook->label = 'A test hook.';
+  $hook->active = TRUE;
+  $hook->variables = array(
+    'node' => array(
+      'type' => 'node',
+      'label' => 'Content',
+    ),
+  );
+  $hooks[$hook->name] = $hook;
+  return $hooks;
+}
+

@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_entity_info().
+ * Implements of hook_entity_info().
  */
 function rules_web_hook_entity_info() {
   return array(
@@ -54,20 +54,159 @@ function rules_web_hook_access_callback($op, $entity_type, $entity = NULL, $acco
   return user_access('administer web hooks', $account);
 }
 
-
-function rules_web_hook_default_rules_web_hook() {
-
-  $hook = new EntityDB(array(), 'rules_web_hook');
-  $hook->name = 'test';
-  $hook->label = 'A test hook.';
-  $hook->active = TRUE;
-  $hook->variables = array(
+/**
+ * Implements hook_default_services_endpoint().
+ */
+function rules_web_hook_default_services_endpoint() {
+  $endpoint = new stdClass;
+  $endpoint->disabled = FALSE;
+  $endpoint->endpoint = 'rules_web_hook';
+  $endpoint->title = 'Rules Web Hooks Endpoint';
+  $endpoint->server = 'rest_server';
+  $endpoint->path = 'rules_web';
+  $endpoint->authentication = '';
+  $endpoint->authentication_settings = FALSE;
+  $endpoint->resources = array(
     'node' => array(
-      'type' => 'node',
-      'label' => 'Content',
+      'alias' => '',
+      'operations' => array(
+        'create' => array(
+          'enabled' => 0,
+        ),
+        'retrieve' => array(
+          'enabled' => 1,
+        ),
+        'update' => array(
+          'enabled' => 0,
+        ),
+        'delete' => array(
+          'enabled' => 0,
+        ),
+        'index' => array(
+          'enabled' => 1,
+        ),
+      ),
+    ),
+    'comment' => array(
+      'alias' => '',
+      'operations' => array(
+        'create' => array(
+          'enabled' => 0,
+        ),
+        'retrieve' => array(
+          'enabled' => 1,
+        ),
+        'update' => array(
+          'enabled' => 0,
+        ),
+        'delete' => array(
+          'enabled' => 0,
+        ),
+        'index' => array(
+          'enabled' => 0,
+        ),
+      ),
+    ),
+    'user' => array(
+      'alias' => '',
+      'operations' => array(
+        'create' => array(
+          'enabled' => 0,
+        ),
+        'retrieve' => array(
+          'enabled' => 1,
+        ),
+        'update' => array(
+          'enabled' => 0,
+        ),
+        'delete' => array(
+          'enabled' => 0,
+        ),
+        'index' => array(
+          'enabled' => 0,
+        ),
+      ),
+    ),
+    'taxonomy_term' => array(
+      'alias' => '',
+      'operations' => array(
+        'create' => array(
+          'enabled' => 0,
+        ),
+        'retrieve' => array(
+          'enabled' => 1,
+        ),
+        'update' => array(
+          'enabled' => 0,
+        ),
+        'delete' => array(
+          'enabled' => 0,
+        ),
+        'index' => array(
+          'enabled' => 0,
+        ),
+      ),
+    ),
+    'taxonomy_vocabulary' => array(
+      'alias' => '',
+      'operations' => array(
+        'create' => array(
+          'enabled' => 0,
+        ),
+        'retrieve' => array(
+          'enabled' => 1,
+        ),
+        'update' => array(
+          'enabled' => 0,
+        ),
+        'delete' => array(
+          'enabled' => 0,
+        ),
+        'index' => array(
+          'enabled' => 0,
+        ),
+      ),
+    ),
+    'rules_web_hook' => array(
+      'alias' => '',
+      'operations' => array(
+        'create' => array(
+          'enabled' => 0,
+        ),
+        'retrieve' => array(
+          'enabled' => 0,
+        ),
+        'update' => array(
+          'enabled' => 0,
+        ),
+        'delete' => array(
+          'enabled' => 0,
+        ),
+        'index' => array(
+          'enabled' => 1,
+        ),
+      ),
+    ),
+    'entity_metadata' => array(
+      'alias' => '',
+      'operations' => array(
+        'create' => array(
+          'enabled' => 0,
+        ),
+        'retrieve' => array(
+          'enabled' => 0,
+        ),
+        'update' => array(
+          'enabled' => 0,
+        ),
+        'delete' => array(
+          'enabled' => 0,
+        ),
+        'index' => array(
+          'enabled' => 1,
+        ),
+      ),
     ),
   );
-  $hooks[$hook->name] = $hook;
-  return $hooks;
+  return array('test' => $endpoint);
 }
-

@@ -1,0 +1,9 @@
+; $Id$
+name = Rules Web Test Module
+description = Module for testing rules web hooks.
+package = Rules
+version = VERSION
+core = 7.x
+files[] = rules_web_test.module
+dependencies[] = rules_web_remote
+dependencies[] = rules_web_hook

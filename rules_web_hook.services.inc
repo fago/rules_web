@@ -12,7 +12,7 @@
 function rules_web_hook_services_resources() {
   $crud_object = new EntityResourceServicesCRUD('rules_web_hook');
   $resources['rules_web_hook']['index'] = array(
-    'file' => array('type' => 'inc', 'module' => 'rules_web', 'name' => 'rules_web.services'),
+    'file' => array('type' => 'inc', 'module' => 'rules_web_hook', 'name' => 'rules_web_hook.services'),
     'callback' => 'rules_web_hook_list_hooks',
     'args' => array(),
     'models' => array(),
@@ -20,7 +20,7 @@ function rules_web_hook_services_resources() {
     'access arguments' => array('view'),
   );
   $resources['entity_metadata']['index'] = array(
-    'file' => array('type' => 'inc', 'module' => 'rules_web', 'name' => 'rules_webservices'),
+    'file' => array('type' => 'inc', 'module' => 'rules_web_hook', 'name' => 'rules_web_hook.services'),
     'callback' => 'rules_web_hook_list_entity_metadata',
     'args' => array(),
     'models' => array(),
@@ -46,7 +46,7 @@ function rules_web_hook_list_entity_metadata() {
   $info = entity_get_info();
   $return = array();
   foreach ($info as $type => $entity_info) {
-    if (entity_metadata_entity_access('view', $type) !== FALSE) {
+    if (entity_metadata_entity_access('view', $type)) {
       $return[$type] = array_intersect_key($entity_info, array_flip(array('label', 'object keys')));
       $wrapper = entity_metadata_wrapper($type);
       $metadata = $wrapper->dataInfo();

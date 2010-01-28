@@ -8,4 +8,8 @@ files[] = rules_web_hook.module
 files[] = rules_web_hook.install
 files[] = rules_web_hook.services.inc
 dependencies[] = rules
-dependencies[] = services (3.x)
+;dependencies[] = services (3.x)
+; It looks like simpletest has troubles with the version information.
+dependencies[] = services
+dependencies[] = rest_server
+dependencies[] = entity_resources

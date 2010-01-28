@@ -25,7 +25,7 @@ function rules_web_remote_schema() {
       ),
       'name' => array(
         'type' => 'varchar',
-        'length' => '255',
+        'length' => '8',
         'not null' => TRUE,
         'description' => 'The name of the remote site.',
       ),
