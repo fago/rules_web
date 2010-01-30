@@ -23,3 +23,56 @@ function rules_web_test_default_rules_web_hook() {
   return $hooks;
 }
 
+/**
+ * Implementation of hook_default_rules_web_remote().
+ */
+function rules_web_test_default_rules_web_remote() {
+  $remote = new RulesWebRemote();
+  $remote->name = 'self';
+  $remote->label = 'The local drupal site.';
+  $remote->url = $GLOBALS['base_url'];
+  $remote->type = 'rules_web_hook';
+  $remotes[$remote->name] = $remote;
+  return $remotes;
+}
+
+/**
+ * Injects entity types into entity info. This is needed to workaround not
+ * being able to use hook_entity_info().
+ *
+ * @see rules_web_remote_entity_info_alter()
+ */
+
+function rules_web_test_inject_entity_types($remote) {
+  // Be sure info is initialized.
+  entity_get_info();
+  $info = &drupal_static('entity_get_info');
+  
+  // Add our info
+  $name = $remote->name;
+  foreach ($remote->dataTypes() as $type => $type_info) {
+    // Don't add in entity types, that stem from another site.
+    if (strpos($type, 'rules_web_') !== 0) {
+      $info['rules_web_' . $name . '_' . $type] = $type_info + array(
+        'controller class' => 'RulesWebRemoteEntityController',
+        'rules web remote' => array(
+          'remote' => $name,
+          'type' => $type,
+        ),
+        'fieldable' => FALSE,
+        'revision table' => FALSE,
+      );
+      // Apply defaults as entity_get_info().
+      $info['rules_web_' . $name . '_' . $type] += array(
+        'static cache' => TRUE,
+        'load hook' => 'rules_web_' . $name . '_' . $type . '_load',
+        'bundles' => array(),
+        'view modes' => array(),
+        'object keys' => array(),
+        'cacheable' => TRUE,
+        'translation' => array(),
+      );
+    }
+  }
+  cache_set('entity_info', $info);
+}

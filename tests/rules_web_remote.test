@@ -31,17 +31,10 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
   }
   
   /**
-   * Returns a remote site object for this site. Note that we don't use
-   * the default hook to provide this as it would result in issueing a page
-   * request during entity-info cache refresh on our site, which 'd result in
-   * a nice end-less loop.
+   * Returns a remote site object for this site.
    */
   protected function getSelfRemoteSiteObject() {
-    $remote = new RulesWebRemote();
-    $remote->name = 'self';
-    $remote->label = 'The local drupal site.';
-    $remote->url = $GLOBALS['base_url'];
-    $remote->type = 'rules_web_hook';
+    $remote = rules_web_remote_load('self');
     $remote->settings = array(
       'curl options' => array(
         // For testing skip ssl verification.
@@ -82,5 +75,13 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     $this->assertTrue($remote->dataTypes() == rules_web_hook_list_entity_metadata(), 'Data types returned.');
     $return = drupal_json_decode(drupal_json_encode(rules_web_hook_list_hooks()));
     $this->assertTrue($remote->events() == $return, 'Events returned.');
+    
+    // Test loading data.
+    $remote_user = $remote->load('user', $user->uid);
+    $this->assertEqual($remote_user->name, $user->name, 'Remote user loaded.');
+    // Test loading data through entity_load().
+    rules_web_test_inject_entity_types($remote);
+    $return = entity_load('rules_web_self_user', array($user->uid));
+    $this->assertEqual(reset($return)->name, $user->name, 'Remote user loaded with entity_load()');
   }
 }

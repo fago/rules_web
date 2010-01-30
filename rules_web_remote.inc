@@ -157,7 +157,7 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
   }
   
   public function load($type, $id) {
-    return $this->client()->get($this->url . "$type/$id.json", array());
+    return (object)$this->client()->get($this->url . "$type/$id.json", array());
   }
   
   public function events() {
@@ -185,8 +185,8 @@ class RulesWebRemoteEntityController extends DrupalDefaultEntityController {
   protected $remote;
   
   function __construct($entityType) {
-    parent::__contruct($entityType);
-    $this->remote = entity_load('rules_web_remote', array($this->entityInfo['rules web remote']));
+    parent::__construct($entityType);
+    $this->remote = rules_web_remote_load($this->entityInfo['rules web remote']['remote']);
   }
   
   
@@ -218,8 +218,9 @@ class RulesWebRemoteEntityController extends DrupalDefaultEntityController {
 
     // Load any remaining entities from the remote site.
     if ($this->ids === FALSE || $this->ids) {
-      //TODO: fix.
-      $queried_entities = $this->remote->load($this->ids);
+      foreach ($this->ids as $id) {
+        $queried_entities[$id] = $this->remote->load($this->entityInfo['rules web remote']['type'], $id);
+      }
     }
 
     // Pass all entities loaded from the database through $this->attachLoad(),
@@ -230,11 +231,8 @@ class RulesWebRemoteEntityController extends DrupalDefaultEntityController {
       $entities += $queried_entities;
     }
 
-    if ($this->cache) {
-      // Add entities to the cache if we are not loading a revision.
-      if (!empty($queried_entities) && !$this->revisionId) {
-        $this->cacheSet($queried_entities);
-      }
+    if ($this->cache && !empty($queried_entities)) {
+      $this->cacheSet($queried_entities);
     }
 
     // Ensure that the returned array is ordered the same as the original

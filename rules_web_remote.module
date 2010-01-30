@@ -19,9 +19,7 @@ function rules_web_remote_entity_info() {
       'object keys' => array(
         'id' => 'id',
         'name' => 'name',
-        'bundle' => 'name',
       ),
-      'bundles' => array(),
       'exportable' => TRUE,
     ),
   );
@@ -31,15 +29,26 @@ function rules_web_remote_entity_info() {
  * Implements of hook_entity_info_alter().
  */
 function rules_web_remote_entity_info_alter(&$info) {
-  // Register entities for all remote data types.
-  foreach (entity_load('rules_web_remote') as $name => $remote) {
+  $remotes = entity_load('rules_web_remote', FALSE);
+  // We register entities for all remote data types, however we skip the remote
+  // site pointing at ourself ('self') defined by the testing module, as this
+  // would result in issueing a page request during the entity info cache
+  // refresh on our site, which would result in a nice cache building endless
+  // loop.
+  unset($remotes['self']);
+  
+  foreach ($remotes as $name => $remote) {
     foreach ($remote->dataTypes() as $type => $type_info) {
       // Don't add in entity types, that stem from another site.
-      if (strpos('rules_web_', $type) !== 0) {
+      if (strpos($type, 'rules_web_') !== 0) {
         $info['rules_web_' . $name . '_' . $type] = $type_info + array(
           'controller class' => 'RulesWebRemoteEntityController',
-          'rules web remote' => $name,
+          'rules web remote' => array(
+            'remote' => $name,
+            'type' => $type,
+          ),
           'fieldable' => FALSE,
+          'revision table' => FALSE,
         );
       }
     }

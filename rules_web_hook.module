@@ -18,9 +18,7 @@ function rules_web_hook_entity_info() {
       'object keys' => array(
         'id' => 'id',
         'name' => 'name',
-        'bundle' => 'name',
       ),
-      'bundles' => array(),
       'exportable' => TRUE,
       'access callback' => 'rules_web_hook_access_callback',
     ),
