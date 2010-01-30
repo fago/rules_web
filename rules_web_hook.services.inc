@@ -42,16 +42,16 @@ function rules_web_hook_list_hooks() {
  * current user has access to use it - so the user isn't aware of unaccesible
  * entities / properties.
  */
-function rules_web_hook_list_entity_metadata() {
+function rules_web_hook_list_entity_metadata($account = NULL) {
   $info = entity_get_info();
   $return = array();
   foreach ($info as $type => $entity_info) {
-    if (entity_metadata_entity_access('view', $type)) {
+    if (entity_metadata_entity_access('view', $type, NULL, $account)) {
       $return[$type] = array_intersect_key($entity_info, array_flip(array('label', 'object keys')));
       $wrapper = entity_metadata_wrapper($type);
       $metadata = $wrapper->dataInfo();
       foreach ($wrapper as $name => $info) {
-        if ($wrapper->$name->access('view')) {
+        if ($wrapper->$name->access('view', $account)) {
           $return[$type]['properties'][$name] = $info;
         }
       }
@@ -62,7 +62,7 @@ function rules_web_hook_list_entity_metadata() {
         if (!empty($bundle_info['properties'])) {
           $wrapper = entity_metadata_wrapper($type, NULL, array('bundle' => $bundle));
           foreach ($bundle_info['properties'] as $name => $info) {
-            if ($wrapper->$name->access('view')) {
+            if ($wrapper->$name->access('view', $account)) {
               $return[$type]['bundles'][$bundle]['properties'][$name] = $info;
             }
           }

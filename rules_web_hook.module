@@ -83,7 +83,7 @@ function rules_web_hook_default_services_endpoint() {
           'enabled' => 0,
         ),
         'index' => array(
-          'enabled' => 1,
+          'enabled' => 0,
         ),
       ),
     ),

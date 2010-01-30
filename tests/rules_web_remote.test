@@ -80,5 +80,7 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     $remote = $this->getSelfRemoteSiteObject();
     module_load_include('inc', 'rules_web_hook', 'rules_web_hook.services');
     $this->assertTrue($remote->dataTypes() == rules_web_hook_list_entity_metadata(), 'Data types returned.');
+    $return = drupal_json_decode(drupal_json_encode(rules_web_hook_list_hooks()));
+    $this->assertTrue($remote->events() == $return, 'Events returned.');
   }
 }

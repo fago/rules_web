@@ -11,6 +11,7 @@
 class RulesWebRemote extends EntityDB {
   
   public $settings = array();
+  public $cache = array();
   public $name;
   public $label;
   public $url;
@@ -22,6 +23,9 @@ class RulesWebRemote extends EntityDB {
   }
   
   public function access($account = NULL) {
+    if (method_exists($this->endpoint(), 'access')) {
+      return $this->endpoint()->access($account);
+    }
     return user_access('interact with remote ' . $this->name, $account);
   }
   
@@ -36,40 +40,88 @@ class RulesWebRemote extends EntityDB {
     return $this->endpoint;
   }
   
-  public function load($ids) {
-    return $this->endpoint()->load($ids);
+  /**
+   * Loads the data of the given type and id. In case of errors a RulesException
+   * is thrown.
+   */
+  public function load($type, $id) {
+    try {
+      return $this->endpoint()->load($type, $id);
+    }
+    catch (Exception $e) {
+      $args = array('%name' => $this->name, '%message' => $e->getMessage(), '%type' => $type, '%id' => $id);
+      throw new RulesException('Unable to load %id of type %type from the remote site %name. Error message: %message', $args, RulesLog::WARN);
+    }
   }
   
   public function events() {
-    return $this->endpoint()->events();
+    if (!isset($this->cache['events'])) {
+      try {
+        $this->cache['events'] = $this->endpoint()->events();
+      }
+      catch (Exception $e) {
+        $args = array('%name' => $this->name, '%message' => $e->getMessage());
+        watchdog('rules remote', 'Error getting web hooks from the remote site %name. Error message: %message.', $args, WATCHDOG_ALERT);
+        return array();
+      }
+    }
+    return $this->cache['events'];
   }
   
   public function dataTypes() {
-    return $this->endpoint()->dataTypes();
+    if (!isset($this->cache['data types'])) {
+      try {
+        $this->cache['data types'] = $this->endpoint()->dataTypes();
+      }
+      catch (Exception $e) {
+        $args = array('%name' => $this->name, '%message' => $e->getMessage());
+        watchdog('rules remote', 'Error getting the data types from the remote site %name. Error message: %message.', $args, WATCHDOG_ALERT);
+        return array();
+      }
+    }
+    return $this->cache['data types'];
   }
-  
+
+  //TODO: Allow providing actions.
   public function actions() {
     return $this->endpoint()->actions();
   }
-  
+
+  //TODO: Allow providing conditions.
   public function conditions() {
     return $this->endpoint()->conditions();
   }
 }
 
 /**
- * Interface for remote endpoints.
+ * Interface for remote endpoints. In case of any errors the implementing
+ * classes should throw exceptions.
  */
 interface RulesWebRemoteEndpointInterface {
   
-  public function load($ids);
+  /**
+   * Load remote data.
+   */
+  public function load($type, $id);
   
+  /**
+   * An array of definitions for the provided events.
+   */
   public function events();
   
+  /**
+   * An array of data types used by the provided events/conditions/actions.
+   */
   public function dataTypes();
   
+  /**
+   * An array of definitions for the provided actions.
+   */
   public function actions();
   
+  /**
+   * An array of definitions for the provided conditions.
+   */
   public function conditions();
 }
 
@@ -104,12 +156,12 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
     return $this->client;
   }
   
-  public function load($ids) {
-    
+  public function load($type, $id) {
+    return $this->client()->get($this->url . "$type/$id.json", array());
   }
   
   public function events() {
-    
+    return $this->client()->get($this->url . "rules_web_hook.json", array());
   }
   
   public function dataTypes() {
@@ -117,11 +169,11 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
   }
   
   public function actions() {
-    
+    return array();
   }
   
   public function conditions() {
-    
+    return array();
   }
 }
 
@@ -166,6 +218,7 @@ class RulesWebRemoteEntityController extends DrupalDefaultEntityController {
 
     // Load any remaining entities from the remote site.
     if ($this->ids === FALSE || $this->ids) {
+      //TODO: fix.
       $queried_entities = $this->remote->load($this->ids);
     }
 
