@@ -14,11 +14,7 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
       'group' => 'Rules',
     );
   }
-
-  function setUp() {
-    parent::setUp('rules_web_test');
-  }
-
+  
   /**
    * Calculates the output of t() given an array of placeholders to replace.
    */
@@ -29,12 +25,35 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     }
     return strtr($text, $placeholders);
   }
+
+  function setUp() {
+    // Set a reference on the current test case instance so we can use it to
+    // setup the remote's curl options.
+    $GLOBALS['RulesWebHooksTestCase'] = $this;
+    parent::setUp('rules_web_test');
+
+    // Create an admin user with access and log in.
+    $user = $this->createAdmin();
+    $user->name = '<b>xss</b>';
+    user_save($user, array('name' => $user->name));
+    $this->drupalLogin($user);
+    
+    // Update the remote to connect with the new session.
+    $remote = rules_web_remote_load('self');
+    // Refresh caches so that the remote's stuff is added.
+    $this->remoteAddCurlOptions($remote);
+    rules_clear_cache(TRUE);
+    drupal_static_reset();
+    cache_clear_all('entity_info', 'cache');
+    cache_clear_all('entity_property_info', 'cache');
+  }
   
   /**
-   * Returns a remote site object for this site.
+   * Adds custom curl options to a remote object so the remote is used to
+   * invoke the currently running test instance via REST.
+   * @see rules_web_test_default_rules_web_remote()
    */
-  protected function getSelfRemoteSiteObject() {
-    $remote = rules_web_remote_load('self');
+  public function remoteAddCurlOptions($remote) {
     $remote->settings = array(
       'curl options' => array(
         // For testing skip ssl verification.
@@ -55,7 +74,6 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     if (preg_match('/simpletest\d+/', $GLOBALS['db_prefix'], $matches)) {
       $remote->settings['curl options'][CURLOPT_USERAGENT] = drupal_generate_test_ua($matches[0]);
     }
-    return $remote;
   }
   
   function createAdmin() {
@@ -67,12 +85,9 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
    * Basic tests.
    */
   function testBasicService() {
-    $user = $this->createAdmin();
-    $user->name = '<b>xss</b>';
-    user_save($user, array('name' => $user->name));
-    $this->drupalLogin($user);
+    $user = $this->loggedInUser;
+    $remote = rules_web_remote_load('self');
     
-    $remote = $this->getSelfRemoteSiteObject();
     module_load_include('inc', 'rules_web_hook', 'rules_web_hook.services');
     $this->assertTrue($remote->dataTypes() == rules_web_hook_list_entity_metadata(), 'Data types returned.');
     $return = drupal_json_decode(drupal_json_encode(rules_web_hook_list_hooks()));
@@ -97,5 +112,28 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     unset($remote_user->name);
     $wrapper = entity_metadata_wrapper('rules_web_self_user', $remote_user);
     $this->assertFalse($wrapper->name->value(), 'Accessing not existing property');
+    
+    $events = rules_fetch_data('event_info');
+    $this->assertTrue(isset($events['rules_web_self_test']), 'Test event is available.');
+    // Make sure the type has been mapped properly.
+    $this->assertTrue($events['rules_web_self_test']['variables']['node']['type'] == 'rules_web_self_node', 'Event variable type mapped.');
+    
+    
+    // Get a remote node and invoke the event!
+    $node = $this->drupalCreateNode(array('type' => 'article', 'title' => 'foo'));
+    $remote_node = reset(entity_load('rules_web_self_node', array($node->nid)));
+    
+    // Test reactin on the remote event.
+    $rule = rules_reaction_rule();
+    $rule->event('rules_web_self_test')
+         ->action('drupal_message', array('message:select' => 'node:title'))
+         ->save();
+    rules_clear_cache(TRUE);
+
+    // Invoke event.
+    rules_invoke_event('rules_web_self_test', $remote_node);
+    // Check messages.
+    $msg = drupal_get_messages();
+    $this->assertEqual(array_pop($msg['status']), 'foo', 'Reacted on remote event.');
   }
 }

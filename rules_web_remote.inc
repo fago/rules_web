@@ -65,7 +65,7 @@ class RulesWebRemote extends EntityDB {
         return array();
       }
     }
-    return $this->cache['events'];
+    return (array)$this->cache['events'];
   }
   
   public function dataTypes() {
@@ -79,7 +79,7 @@ class RulesWebRemote extends EntityDB {
         return array();
       }
     }
-    return $this->cache['data types'];
+    return (array)$this->cache['data types'];
   }
 
   //TODO: Allow providing actions.

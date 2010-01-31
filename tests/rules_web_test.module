@@ -32,6 +32,10 @@ function rules_web_test_default_rules_web_remote() {
   $remote->label = 'The local drupal site.';
   $remote->url = $GLOBALS['base_url'];
   $remote->type = 'rules_web_hook';
+  if (!empty($GLOBALS['RulesWebHooksTestCase']) && $test = $GLOBALS['RulesWebHooksTestCase']) {
+    // Make the remote work with the test environment.
+    $test->remoteAddCurlOptions($remote);
+  }
   $remotes[$remote->name] = $remote;
   return $remotes;
 }
