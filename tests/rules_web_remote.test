@@ -68,6 +68,8 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
    */
   function testBasicService() {
     $user = $this->createAdmin();
+    $user->name = '<b>xss</b>';
+    user_save($user, array('name' => $user->name));
     $this->drupalLogin($user);
     
     $remote = $this->getSelfRemoteSiteObject();
@@ -79,9 +81,21 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     // Test loading data.
     $remote_user = $remote->load('user', $user->uid);
     $this->assertEqual($remote_user->name, $user->name, 'Remote user loaded.');
+
     // Test loading data through entity_load().
     rules_web_test_inject_entity_types($remote);
     $return = entity_load('rules_web_self_user', array($user->uid));
-    $this->assertEqual(reset($return)->name, $user->name, 'Remote user loaded with entity_load()');
+    $remote_user = reset($return);
+    $this->assertEqual($remote_user->name, $user->name, 'Remote user loaded with entity_load()');
+    
+    // Now try using a data wrapper to access the properties as stated.
+    $wrapper = entity_metadata_wrapper('rules_web_self_user', $remote_user);
+    $this->assertEqual($wrapper->name->value(), $user->name, 'Using wrapper with remote entity.');
+    $this->assertEqual($wrapper->name->value(array('sanitize' => TRUE)), filter_xss($user->name), 'Sanitizing with remote data.');
+    
+    // Make sure accessing a not existing property doesn't cause troubles.
+    unset($remote_user->name);
+    $wrapper = entity_metadata_wrapper('rules_web_self_user', $remote_user);
+    $this->assertFalse($wrapper->name->value(), 'Accessing not existing property');
   }
 }

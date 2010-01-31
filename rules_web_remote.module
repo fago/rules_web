@@ -41,7 +41,8 @@ function rules_web_remote_entity_info_alter(&$info) {
     foreach ($remote->dataTypes() as $type => $type_info) {
       // Don't add in entity types, that stem from another site.
       if (strpos($type, 'rules_web_') !== 0) {
-        $info['rules_web_' . $name . '_' . $type] = $type_info + array(
+        $info['rules_web_' . $name . '_' . $type] = array_intersect_key($type_info, array_flip(array('label', 'object keys')));
+        $info['rules_web_' . $name . '_' . $type] += array(
           'controller class' => 'RulesWebRemoteEntityController',
           'rules web remote' => array(
             'remote' => $name,
@@ -50,9 +51,49 @@ function rules_web_remote_entity_info_alter(&$info) {
           'fieldable' => FALSE,
           'revision table' => FALSE,
         );
+        foreach ($type_info['bundles'] as $bundle => $bundle_info) {
+          $info['rules_web_' . $name . '_' . $type]['bundles'][$bundle] = array_intersect_key($bundle_info, array_flip(array('label')));
+        }
       }
     }
   }
+}
+
+/**
+ * Implements of hook_entity_property_info().
+ */
+function rules_web_remote_entity_property_info() {
+  $info = array();
+  foreach (entity_load('rules_web_remote', FALSE) as $name => $remote) {
+    foreach ($remote->dataTypes() as $type => $type_info) {
+      // Don't add in entity types, that stem from another site.
+      if (strpos($type, 'rules_web_') !== 0) {
+        $info['rules_web_' . $name . '_' . $type] = _rules_web_remote_get_property_info($type_info);
+        foreach ($type_info['bundles'] as $bundle => $bundle_info) {
+          $info['rules_web_' . $name . '_' . $type]['bundles'][$bundle] = _rules_web_remote_get_property_info($bundle_info);
+        }
+      }
+    }
+  }
+  return $info;
+}
+
+function _rules_web_remote_get_property_info($type_info) {
+  $info = array_intersect_key($type_info, array_flip(array('properties')));
+  if (!empty($info['properties'])) {
+    foreach ($info['properties'] as &$property_info) {
+      // Filter out only allowed keys.
+      $property_info = array_intersect_key($property_info, array_flip(array('label', 'type', 'description', 'sanitize')));
+      if (empty($property_info['type']) || $property_info['type'] == 'text') {
+        // Make sure to sanitize text - don't trust given sanitize functions.
+        $property_info += array('sanitize' => 'check_plain');
+        if (!in_array($property_info['sanitize'], array('check_plain', 'filter_xss'))) {
+          $property_info['sanitize'] = 'check_plain';
+        }
+      }
+    }
+  }
+  return $info;
 }
 
 /**

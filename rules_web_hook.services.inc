@@ -52,7 +52,7 @@ function rules_web_hook_list_entity_metadata($account = NULL) {
       $metadata = $wrapper->dataInfo();
       foreach ($wrapper as $name => $info) {
         if ($wrapper->$name->access('view', $account)) {
-          $return[$type]['properties'][$name] = $info;
+          $return[$type]['properties'][$name] = array_intersect_key($info, array_flip(array('label', 'type', 'description', 'sanitize')));
         }
       }
       // Add in bundle properties
@@ -63,7 +63,7 @@ function rules_web_hook_list_entity_metadata($account = NULL) {
           $wrapper = entity_metadata_wrapper($type, NULL, array('bundle' => $bundle));
           foreach ($bundle_info['properties'] as $name => $info) {
             if ($wrapper->$name->access('view', $account)) {
-              $return[$type]['bundles'][$bundle]['properties'][$name] = $info;
+              $return[$type]['bundles'][$bundle]['properties'][$name] = array_intersect_key($info, array_flip(array('label', 'type', 'description', 'sanitize')));
             }
           }
         }
