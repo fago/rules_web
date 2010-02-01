@@ -6,6 +6,38 @@
  */
 
 /**
+ * Menu callback for notifying us of a remote event.
+ */
+function rules_web_remote_notify($remote) {
+  if (($json = file_get_contents('php://input')) && $data = @drupal_json_decode($json)) {
+    $events = $remote->events();
+    if (!empty($data['event_name']) && !empty($data['event_data']) && isset($events[$data['event_name']])) {
+      $name = 'rules_web_' . $remote->name . '_' . $data['event_name'];
+      if ($event_set = rules_get_cache('event_' . $name)) {
+        // Make sure passed arguments are complete and invoke event.
+        $event_args = $event_set->argumentInfo();
+        if (($args = array_intersect_key((array)$data['event_data'], $event_args)) && count($args) == count($event_args)) {
+          $event_set->execute($args);
+        }
+      }
+      else {
+        $remote->unsubscribe($data['event_name']);
+      }
+    }
+    elseif (isset($data['handshake'])) {
+      // Accept handshakes to verify that this is a valid callback.
+      return TRUE;
+    }
+    else {
+      drupal_add_http_header('404 Not Found');
+    }
+  }
+  else {
+    drupal_add_http_header('415 Unsupported Media Type');
+  }
+}
+
+/**
  * Class representing remote sites.
  */
 class RulesWebRemote extends EntityDB {
@@ -98,34 +130,25 @@ class RulesWebRemote extends EntityDB {
   public function clearCache() {
     $this->cache = array();
   }
-}
 
-/**
- * Menu callback for notifying us of a remote event.
- */
-function rules_web_remote_notify($remote) {
-  if (($json = file_get_contents('php://input')) && $data = @drupal_json_decode($json)) {
-    $events = $remote->events();
-    if (!empty($data['event_name']) && !empty($data['event_data']) && isset($events[$data['event_name']])) {
-      $name = 'rules_web_' . $remote->name . '_' . $data['event_name'];
-      if ($event_set = rules_get_cache('event_' . $name)) {
-        // Make sure passed arguments are complete and invoke event.
-        $event_args = $event_set->argumentInfo();
-        if (($args = array_intersect_key((array)$data['event_data'], $event_args)) && count($args) == count($event_args)) {
-          $event_set->execute($args);
-        }
-      }
-      else {
-        debug('No reaction rules found.');
-       //TODO: No configured rule - so unsubscribe from the event.
-      }
+  public function subscribe($event) {
+    try {
+      $this->endpoint()->subscribe($event);
     }
-    else {
-      drupal_add_http_header('404 Not Found');
+    catch (Exception $e) {
+      $args = array('%event' => $event, '%name' => $this->name, '%message' => $e->getMessage());
+      watchdog('rules remote', 'Error subscribing to event %event of remote site %name. Error message: %message.', $args, WATCHDOG_ERROR);
     }
   }
-  else {
-    drupal_add_http_header('415 Unsupported Media Type');
+
+  public function unsubscribe($event) {
+    try {
+      $this->endpoint()->unsubscribe($event);
+    }
+    catch (Exception $e) {
+      $args = array('%event' => $event, '%name' => $this->name, '%message' => $e->getMessage());
+      watchdog('rules remote', 'Error unsubscribing from event %event of remote site %name. Error message: %message.', $args, WATCHDOG_ERROR);
+    }
   }
 }
 
@@ -145,6 +168,16 @@ interface RulesWebRemoteEndpointInterface {
    * An array of definitions for the provided events.
    */
   public function events();
+
+  /**
+   * Subscribe to a remote event.
+   */
+  public function subscribe($event);
+
+  /**
+   * Unsubscribe from a remote event.
+   */
+  public function unsubscribe($event);
 
   /**
    * An array of data types used by the provided events/conditions/actions.
@@ -194,11 +227,30 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
   }
 
   public function load($type, $id) {
-    return (object)$this->client()->get($this->url . "$type/$id.json");
+    if (valid_url($url = $this->url . "$type/$id.json", TRUE)) {
+      return (object)$this->client()->get($url);
+    }
   }
 
   public function events() {
     return $this->client()->get($this->url . "rules_web_hook.json");
+  }
+
+  public function subscribe($event) {
+    if (valid_url($url = $this->url . "rules_web_hook/$event/subscribe.json", TRUE)) {
+      $this->client()->post($url, array(
+         'url' => url('rules_web/rules_web_remote/' . $this->remote->name . '/notify', array('absolute' => TRUE)),
+         'http_auth' => rules_web_remote_get_http_auth(),
+      ));
+    }
+  }
+
+  public function unsubscribe($event) {
+    if (valid_url($url = $this->url . "rules_web_hook/$event/unsubscribe.json", TRUE)) {
+      $this->client()->post($url, array(
+         'url' => url('rules_web/rules_web_remote/' . $this->remote->name . '/notify', array('absolute' => TRUE)),
+      ));
+    }
   }
 
   public function dataTypes() {

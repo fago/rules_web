@@ -53,10 +53,11 @@ function rules_web_hook_schema() {
   );
   $schema['rules_web_hook_subscriber'] = array(
     'fields' => array(
-      'id' => array(
-        'type' => 'serial',
+      'hook' => array(
+        'type' => 'varchar',
+        'length' => '255',
         'not null' => TRUE,
-        'description' => 'The internal web hook identifier.',
+        'description' => 'The name of the web hook subcribed to.',
       ),
       'url' => array(
         'type' => 'varchar',
@@ -70,11 +71,13 @@ function rules_web_hook_schema() {
         'not null' => FALSE,
         'default' => 0,
       ),
+      'http_auth' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'description' => 'HTTP authentication credentials.',
+      ),
     ),
-    'primary key' => array('id', 'url'),
-    'foreign keys' => array(
-      'id' => array('rules_web_hook' => 'id'),
-    ),
+    'primary key' => array('hook', 'url'),
   );
   return $schema;
 }

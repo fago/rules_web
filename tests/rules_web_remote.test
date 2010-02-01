@@ -43,6 +43,14 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     // Refresh caches so that the remote's stuff is added.
     $this->remoteAddCurlOptions($remote);
 
+    // Set up http auth for the http callback.
+    if (isset($this->httpauth_credentials)) {
+      $parts = explode(':', $this->httpauth_credentials);
+      variable_set('rules_web_httpauth_username', $parts[0]);
+      variable_set('rules_web_httpauth_password', $parts[1]);
+      variable_set('rules_web_httpauth_method', $this->httpauth_method);
+    }
+
     rules_clear_cache(TRUE);
     drupal_static_reset();
     cache_clear_all('entity_info', 'cache');
@@ -155,14 +163,38 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     unset($remote->settings['curl options'][CURLOPT_HEADERFUNCTION]);
     $remote->save();
 
-    $client = $remote->call('endpoint')->client();
-    $url = url('rules_web/rules_web_remote/self/notify', array('absolute' => TRUE));
-    $client->post($url, array(
+    // Make sure the used client works with the simpletest environment.
+    $client = rules_web_hook_get_client();
+    $client->curlOpts = $remote->settings['curl options'];
+
+    $callback_url = url('rules_web/rules_web_remote/self/notify', array('absolute' => TRUE));
+    $client->post($callback_url, array(
        'event_name' => 'test',
        'event_data' => array('node' => $remote_node),
     ));
 
     $node = node_load($node->nid, NULL, TRUE);
     $this->assertEqual($node->title, 'bar', 'Reacted on remote event invoked via a HTTP notification.');
+
+    // Test subcription service. Use directly the endpoint so if exceptions
+    // occure simpletest can get them.
+    $endpoint = $remote->call('endpoint');
+    $endpoint->subscribe('test');
+
+    $return = db_select('rules_web_hook_subscriber')
+      ->fields('rules_web_hook_subscriber', array('url'))
+      ->condition('hook', 'test')
+      ->execute()->fetchAssoc();
+    $this->assertTrue($return['url'] == $callback_url, 'Subscribed to web hook.');
+
+
+    // Delete subcription.
+    $endpoint->unsubscribe('test');
+
+    $return = db_select('rules_web_hook_subscriber')
+      ->fields('rules_web_hook_subscriber', array('url'))
+      ->condition('hook', 'test')
+      ->execute()->fetchAssoc();
+    $this->assertFalse($return, 'Unsubscribed to web hook.');
   }
 }

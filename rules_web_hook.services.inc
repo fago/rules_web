@@ -31,12 +31,21 @@ function rules_web_hook_services_resources() {
         'name' => 'id',
         'optional' => FALSE,
         'source' => array('path' => 0),
+        'type' => 'string',
       ),
       array(
         'name' => 'url',
-        'source' => 'data',
+        'source' => array('data' => 'url'),
         'description' => 'The URL where to post notifications to.',
         'type' => 'string',
+        'optional' => FALSE,
+      ),
+      array(
+        'name' => 'data',
+        'source' => 'data',
+        'description' => 'The whole passed data.',
+        'type' => 'array',
+        'optional' => FALSE,
       ),
     ),
     'models' => array(),
@@ -112,16 +121,23 @@ function rules_web_hook_list_entity_metadata($account = NULL) {
 function rules_web_hook_subscribe($crud_object, $args) {
   if ($hook = $crud_object->load($args[0])) {
     $url = $args[1];
+    $data = $args[2] + array('http_auth' => NULL);
 
     try {
-      $client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
-      $client->post($url, array(
-        'handshake' => TRUE,
-      ));
+      // Verify the URL is valid except if it's from our own site (tests!).
+      if (strpos($url, $GLOBALS['base_url'] !== 0)) {
+        $client = rules_web_hook_get_client($data['http_auth']);
+        $client->post($url, array(
+          'handshake' => TRUE,
+        ));
+      }
 
       db_merge('rules_web_hook_subscriber')
-        ->key(array('id' => $hook->id, 'url' => $url))
-        ->fields(array('uid' => $GLOBALS['user']->uid))
+        ->key(array('hook' => $hook->name, 'url' => $url))
+        ->fields(array(
+          'uid' => $GLOBALS['user']->uid,
+          'http_auth' => serialize($data['http_auth']),
+        ))
         ->execute();
 
       return TRUE;
@@ -138,13 +154,31 @@ function rules_web_hook_subscribe($crud_object, $args) {
  * Service resource action callback invoked via the entity resource crud object.
  */
 function rules_web_hook_unsubscribe($crud_object, $args) {
-  $hook = $crud_object->load($args[0]);
-  $url = $args[1];
 
   db_delete('rules_web_hook_subscriber')
-    ->condition('id', $hook->id)
-    ->condition('url', $url)
+    ->condition('hook', $args[0])
+    ->condition('url', $args[1])
+    ->condition('uid', $GLOBALS['user']->uid)
     ->execute();
 
   return TRUE;
+}
+
+/**
+ * Gets a REST client for sending notifications about occured web hooks.
+ */
+function rules_web_hook_get_client($auth = NULL) {
+  $client = &drupal_static(__FUNCTION__);
+
+  if (!isset($client)) {
+    $client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
+  }
+  // Add http auth credentials if necessary.
+  if (!empty($auth)) {
+    $client->curlOpts += array(
+      CURLOPT_HTTPAUTH => $auth['method'],
+      CURLOPT_USERPWD => $auth['username'] . ':' . $auth['password'],
+    );
+  }
+  return $client;
 }

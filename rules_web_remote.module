@@ -55,7 +55,7 @@ function rules_web_remote_entity_info_alter(&$info) {
   // refresh on our site, which would result in a nice cache building endless
   // loop.
   unset($remotes['self']);
-  
+
   foreach ($remotes as $name => $remote) {
     foreach ($remote->dataTypes() as $type => $type_info) {
       // Don't add in entity types, that stem from another site.
@@ -157,4 +157,18 @@ function rules_web_remote_rules_endpoint_types() {
 function rules_web_remote_load($id) {
   $return = entity_load('rules_web_remote', array($id));
   return reset($return);
+}
+
+/**
+ * Gets configured http auth settings. For now we just use the simpletest
+ * settings.
+ */
+function rules_web_remote_get_http_auth() {
+  if (($username = variable_get('rules_web_httpauth_username', NULL)) && $password = variable_get('rules_web_httpauth_password', NULL)) {
+    return array(
+      'method' => variable_get('rules_web_httpauth_method', CURLAUTH_BASIC),
+      'username' => $username,
+      'password' => $password,
+    );
+  }
 }
