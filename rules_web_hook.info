@@ -12,4 +12,5 @@ dependencies[] = rules
 ; It looks like simpletest has troubles with the version information.
 dependencies[] = services
 dependencies[] = rest_server
+dependencies[] = rest_client
 dependencies[] = entity_resources

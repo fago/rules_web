@@ -51,6 +51,31 @@ function rules_web_hook_schema() {
       'name' => array('name'),
     ),
   );
+  $schema['rules_web_hook_subscriber'] = array(
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'The internal web hook identifier.',
+      ),
+      'url' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'description' => 'The subscribed URL, where to send the notifications.',
+      ),
+      'uid' => array(
+        'description' => 'The id of the user account used for authentication.',
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id', 'url'),
+    'foreign keys' => array(
+      'id' => array('rules_web_hook' => 'id'),
+    ),
+  );
   return $schema;
 }
 
