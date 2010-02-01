@@ -53,6 +53,13 @@ function rules_web_remote_schema() {
         'serialize' => TRUE,
         'description' => 'The endpoint type specific settings.',
       ),
+      'cache' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'serialize' => TRUE,
+        'size' => 'big',
+        'description' => 'May be used to cache endpoint provided information.',
+      ),
       'authentication' => array(
         'type' => 'text',
         'not null' => FALSE,

@@ -9,26 +9,26 @@
  * Class representing remote sites.
  */
 class RulesWebRemote extends EntityDB {
-  
+
   public $settings = array();
   public $cache = array();
   public $name;
   public $label;
   public $url;
-  
+
   protected $endpoint = NULL;
-  
+
   function __construct($values = array(), $entity_type = 'rules_web_remote') {
     parent::__construct($values, $entity_type);
   }
-  
+
   public function access($account = NULL) {
     if (method_exists($this->endpoint(), 'access')) {
       return $this->endpoint()->access($account);
     }
     return user_access('interact with remote ' . $this->name, $account);
   }
-  
+
   /**
    * @return RulesWebRemoteEndpointInterface
    */
@@ -39,7 +39,7 @@ class RulesWebRemote extends EntityDB {
     }
     return $this->endpoint;
   }
-  
+
   /**
    * Loads the data of the given type and id. In case of errors a RulesException
    * is thrown.
@@ -53,72 +53,109 @@ class RulesWebRemote extends EntityDB {
       throw new RulesException('Unable to load %id of type %type from the remote site %name. Error message: %message', $args, RulesLog::WARN);
     }
   }
-  
+
   public function events() {
     if (!isset($this->cache['events'])) {
-      try {
-        $this->cache['events'] = $this->endpoint()->events();
-      }
-      catch (Exception $e) {
-        $args = array('%name' => $this->name, '%message' => $e->getMessage());
-        watchdog('rules remote', 'Error getting web hooks from the remote site %name. Error message: %message.', $args, WATCHDOG_ALERT);
-        return array();
-      }
+      $this->refreshCache();
     }
-    return (array)$this->cache['events'];
+    return !empty($this->cache['events']) ? $this->cache['events'] : array();
   }
-  
+
   public function dataTypes() {
-    if (!isset($this->cache['data types'])) {
-      try {
-        $this->cache['data types'] = $this->endpoint()->dataTypes();
-      }
-      catch (Exception $e) {
-        $args = array('%name' => $this->name, '%message' => $e->getMessage());
-        watchdog('rules remote', 'Error getting the data types from the remote site %name. Error message: %message.', $args, WATCHDOG_ALERT);
-        return array();
-      }
+    if (!isset($this->cache['dataTypes'])) {
+      $this->refreshCache();
     }
-    return (array)$this->cache['data types'];
+    return !empty($this->cache['dataTypes']) ? $this->cache['dataTypes'] : array();
   }
 
-  //TODO: Allow providing actions.
   public function actions() {
-    return $this->endpoint()->actions();
+    if (!isset($this->cache['actions'])) {
+      $this->refreshCache();
+    }
+    return !empty($this->cache['actions']) ? $this->cache['actions'] : array();
   }
 
-  //TODO: Allow providing conditions.
   public function conditions() {
-    return $this->endpoint()->conditions();
+    if (!isset($this->cache['conditions'])) {
+      $this->refreshCache();
+    }
+    return !empty($this->cache['conditions']) ? $this->cache['conditions'] : array();
+  }
+
+  protected function refreshCache() {
+    try {
+      $this->cache['dataTypes'] = $this->endpoint()->dataTypes();
+      $this->cache['actions'] = $this->endpoint()->actions();
+      $this->cache['conditions'] = $this->endpoint()->conditions();
+      $this->cache['events'] = $this->endpoint()->events();
+    }
+    catch (Exception $e) {
+      $args = array('%name' => $this->name, '%message' => $e->getMessage());
+      watchdog('rules remote', 'Error getting definitions from the remote site %name. Error message: %message.', $args, WATCHDOG_ALERT);
+    }
+  }
+
+  public function clearCache() {
+    $this->cache = array();
   }
 }
+
+/**
+ * Menu callback for notifying us of a remote event.
+ */
+function rules_web_remote_notify($remote) {
+  if (($json = file_get_contents('php://input')) && $data = @drupal_json_decode($json)) {
+    $events = $remote->events();
+    if (!empty($data['event_name']) && !empty($data['event_data']) && isset($events[$data['event_name']])) {
+      $name = 'rules_web_' . $remote->name . '_' . $data['event_name'];
+      if ($event_set = rules_get_cache('event_' . $name)) {
+        // Make sure passed arguments are complete and invoke event.
+        $event_args = $event_set->argumentInfo();
+        if (($args = array_intersect_key((array)$data['event_data'], $event_args)) && count($args) == count($event_args)) {
+          $event_set->execute($args);
+        }
+      }
+      else {
+        debug('No reaction rules found.');
+       //TODO: No configured rule - so unsubscribe from the event.
+      }
+    }
+    else {
+      drupal_add_http_header('404 Not Found');
+    }
+  }
+  else {
+    drupal_add_http_header('415 Unsupported Media Type');
+  }
+}
+
 
 /**
  * Interface for remote endpoints. In case of any errors the implementing
  * classes should throw exceptions.
  */
 interface RulesWebRemoteEndpointInterface {
-  
+
   /**
    * Load remote data.
    */
   public function load($type, $id);
-  
+
   /**
    * An array of definitions for the provided events.
    */
   public function events();
-  
+
   /**
    * An array of data types used by the provided events/conditions/actions.
    */
   public function dataTypes();
-  
+
   /**
    * An array of definitions for the provided actions.
    */
   public function actions();
-  
+
   /**
    * An array of definitions for the provided conditions.
    */
@@ -129,23 +166,23 @@ interface RulesWebRemoteEndpointInterface {
  * A remote endpoint types for rules web hooks.
  */
 class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface {
-  
+
   /**
    * @var RulesWebRemote
    */
   protected $remote, $url;
-  
+
   /**
    * @var RestClient
    */
   protected  $client;
-  
+
   public function __construct($remote, $base_path = 'rules_web') {
     $this->remote = $remote;
     $this->url = $remote->url . '/' . $base_path . '/';
   }
-  
-  protected function client() {
+
+  public function client() {
     if (!isset($this->client)) {
       $this->client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
       // Pass through additional curl options.
@@ -155,23 +192,23 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
     }
     return $this->client;
   }
-  
+
   public function load($type, $id) {
-    return (object)$this->client()->get($this->url . "$type/$id.json", array());
+    return (object)$this->client()->get($this->url . "$type/$id.json");
   }
-  
+
   public function events() {
-    return $this->client()->get($this->url . "rules_web_hook.json", array());
+    return $this->client()->get($this->url . "rules_web_hook.json");
   }
-  
+
   public function dataTypes() {
-    return $this->client()->get($this->url . 'entity_metadata.json', array());
+    return $this->client()->get($this->url . 'entity_metadata.json');
   }
-  
+
   public function actions() {
     return array();
   }
-  
+
   public function conditions() {
     return array();
   }
@@ -181,15 +218,15 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
  * A controller for loading remote data.
  */
 class RulesWebRemoteEntityController extends DrupalDefaultEntityController {
-  
+
   protected $remote;
-  
+
   function __construct($entityType) {
     parent::__construct($entityType);
     $this->remote = rules_web_remote_load($this->entityInfo['rules web remote']['remote']);
   }
-  
-  
+
+
   /**
    * Override load to fetch the data from the remote site. For now we don't
    * support using $conditions or revisions.

@@ -6,6 +6,25 @@
  */
 
 /**
+ * Implements of hook_menu().
+ */
+function rules_web_remote_menu() {
+  $items['rules_web/rules_web_remote/%rules_web_remote/notify'] = array(
+    'page callback' => 'rules_web_remote_notify',
+    'page arguments' => array(2),
+    'access callback' => 'rules_web_remote_access',
+    'access arguments' => array(2),
+    'type' => MENU_CALLBACK,
+    'file' => 'rules_web_remote.inc',
+  );
+  return $items;
+}
+
+function rules_web_remote_access($remote) {
+  return $remote->access();
+}
+
+/**
  * Implements of hook_entity_info().
  */
 function rules_web_remote_entity_info() {
