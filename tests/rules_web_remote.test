@@ -145,11 +145,12 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     $rule = rules_reaction_rule();
     $rule->event('rules_web_self_test')
          ->action('data_fetch', array('type' => 'node', 'param_id' => $node->nid))
-         ->action('data_set', array('data:select' => 'data_fetched:title', 'value' => 'bar'))
+         ->action('data_set', array('data:select' => 'data_fetched:title', 'value:select' => 'node:title'))
          ->save();
     rules_clear_cache(TRUE);
 
     // Invoke event.
+    $remote_node->title = 'bar';
     rules_invoke_event('rules_web_self_test', $remote_node);
 
     $node = node_load($node->nid, NULL, TRUE);
@@ -159,9 +160,11 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     // Now try again but invoke via a REST call.
     $node->title = 'foo';
     node_save($node);
-    // Save our remote object curl options so the loaded remote is fine.
+    // Save our remote object curl options so the loaded remote is fine, but
+    // exclude the test case as error handler.
     unset($remote->settings['curl options'][CURLOPT_HEADERFUNCTION]);
     $remote->save();
+    $this->remoteAddCurlOptions($remote);
 
     // Make sure the used client works with the simpletest environment.
     $client = rules_web_hook_get_client();
@@ -187,6 +190,12 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
       ->execute()->fetchAssoc();
     $this->assertTrue($return['url'] == $callback_url, 'Subscribed to web hook.');
 
+    // Test invoking the web hook and sending out subscribtion notifications by
+    // setting the title of the node to the title of the passed node (foo2).
+    $node2 = $this->drupalCreateNode(array('type' => 'article', 'title' => 'foo2'));
+    rules_web_hook_invoke('test', array('node' => $node2));
+    $node = node_load($node->nid, NULL, TRUE);
+    $this->assertEqual($node->title, 'foo2', 'Sent event notification to subscriber and reacted.');
 
     // Delete subcription.
     $endpoint->unsubscribe('test');

@@ -18,9 +18,12 @@ function rules_web_remote_notify($remote) {
         $event_args = $event_set->argumentInfo();
         if (($args = array_intersect_key((array)$data['event_data'], $event_args)) && count($args) == count($event_args)) {
           $event_set->execute($args);
+          $t_args = array('%event' => $data['event_name'], '%remote' => $remote->label, '%log' => RulesLog::logger()->render());
+          watchdog('rules web remote', 'Event %event of remote %name triggered rule evaluation: %log', $t_args, WATCHDOG_NOTICE);
         }
       }
       else {
+        // We don't have any configured rules, so unsubscribe.
         $remote->unsubscribe($data['event_name']);
       }
     }

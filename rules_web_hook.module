@@ -53,6 +53,61 @@ function rules_web_hook_access_callback($op, $entity_type, $entity = NULL, $acco
 }
 
 /**
+ * Gets a REST client for sending notifications about occured web hooks.
+ */
+function rules_web_hook_get_client($auth = NULL) {
+  $client = &drupal_static(__FUNCTION__);
+
+  if (!isset($client)) {
+    $client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
+  }
+  // Add http auth credentials if necessary.
+  $client->curlOpts[CURLOPT_USERPWD] = !empty($auth['username']) ? $auth['username'] . ':' . $auth['password'] : '';
+  $client->curlOpts[CURLOPT_HTTPAUTH] = !empty($auth['method']) ? $auth['method'] : '';
+  return $client;
+}
+
+/**
+ * Invoke a web hook.
+ *
+ * @param $name
+ *   The name of the web hook to invoke.
+ * @param $args
+ *   An array of arguments to pass to the hook, keyed with the variable names
+ *   as described in $hook->variables. Optionally the arguments may be rules
+ *   data wrappers.
+ * @param $state
+ *   The rules evaluateion state, if invoked during a rules evaluation.
+ */
+function rules_web_hook_invoke($hook_name, $args = array(), $state = NULL) {
+  $hook = reset(entity_load('rules_web_hook', array($hook_name)));
+
+  // Get the actual property values by applying all getter callbacks.
+  foreach ($hook->variables as $name => $var_info) {
+    $var = rules_wrap_data($args[$name], $var_info);
+    if ($var instanceof RulesDataMetadataWrapperInterface) {
+      $args[$name] = EntityResourceServicesCRUD::getData($var->metadataWrapper($state));
+    }
+  }
+  // Send notifications to all subscribed HTTP callbacks.
+  $query = db_select('rules_web_hook_subscriber', 'rs')
+    ->fields('rs')
+    ->condition('hook', $hook_name);
+
+  foreach ($query->execute() as $row) {
+    try {
+      $client = rules_web_hook_get_client(unserialize($row->http_auth));
+      $client->post($row->url, array('event_name' => $hook_name, 'event_data' => $args));
+    }
+    catch (erException $e) {
+      $args = array('%name' => $hook_name, '%url' => $url, '%message' => $e->getMessage());
+      watchdog('rules web hooks', 'Error sending hook %name notification to %url. Error message: %message.', $args, WATCHDOG_WARNING);
+    }
+  }
+}
+
+
+/**
  * Implements hook_default_services_endpoint().
  */
 function rules_web_hook_default_services_endpoint() {

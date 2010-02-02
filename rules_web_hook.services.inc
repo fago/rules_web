@@ -164,21 +164,4 @@ function rules_web_hook_unsubscribe($crud_object, $args) {
   return TRUE;
 }
 
-/**
- * Gets a REST client for sending notifications about occured web hooks.
- */
-function rules_web_hook_get_client($auth = NULL) {
-  $client = &drupal_static(__FUNCTION__);
 
-  if (!isset($client)) {
-    $client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
-  }
-  // Add http auth credentials if necessary.
-  if (!empty($auth)) {
-    $client->curlOpts += array(
-      CURLOPT_HTTPAUTH => $auth['method'],
-      CURLOPT_USERPWD => $auth['username'] . ':' . $auth['password'],
-    );
-  }
-  return $client;
-}
