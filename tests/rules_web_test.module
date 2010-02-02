@@ -51,10 +51,10 @@ function rules_web_test_inject_entity_types($remote) {
   // Be sure info is initialized.
   entity_get_info();
   $info = &drupal_static('entity_get_info');
-  
+
   // Add our info
   $name = $remote->name;
-  foreach ($remote->dataTypes() as $type => $type_info) {
+  foreach ($remote->entities() as $type => $type_info) {
     // Don't add in entity types, that stem from another site.
     if (strpos($type, 'rules_web_') !== 0) {
       $info['rules_web_' . $name . '_' . $type] = $type_info + array(

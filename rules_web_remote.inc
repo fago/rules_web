@@ -96,11 +96,11 @@ class RulesWebRemote extends EntityDB {
     return !empty($this->cache['events']) ? $this->cache['events'] : array();
   }
 
-  public function dataTypes() {
-    if (!isset($this->cache['dataTypes'])) {
+  public function entities() {
+    if (!isset($this->cache['entities'])) {
       $this->refreshCache();
     }
-    return !empty($this->cache['dataTypes']) ? $this->cache['dataTypes'] : array();
+    return !empty($this->cache['entities']) ? $this->cache['entities'] : array();
   }
 
   public function actions() {
@@ -119,7 +119,7 @@ class RulesWebRemote extends EntityDB {
 
   protected function refreshCache() {
     try {
-      $this->cache['dataTypes'] = $this->endpoint()->dataTypes();
+      $this->cache['entities'] = $this->endpoint()->entities();
       $this->cache['actions'] = $this->endpoint()->actions();
       $this->cache['conditions'] = $this->endpoint()->conditions();
       $this->cache['events'] = $this->endpoint()->events();
@@ -183,9 +183,10 @@ interface RulesWebRemoteEndpointInterface {
   public function unsubscribe($event);
 
   /**
-   * An array of data types used by the provided events/conditions/actions.
+   * An array of info about entity types used by the provided
+   * events/conditions/actions.
    */
-  public function dataTypes();
+  public function entities();
 
   /**
    * An array of definitions for the provided actions.
@@ -256,7 +257,7 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
     }
   }
 
-  public function dataTypes() {
+  public function entities() {
     return $this->client()->get($this->url . 'entity_metadata.json');
   }
 

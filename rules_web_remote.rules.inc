@@ -15,7 +15,7 @@ function rules_web_remote_rules_event_info() {
   $valid_types = $cache['data_info'] + entity_get_info();
 
   foreach (entity_load('rules_web_remote', FALSE) as $name => $remote) {
-    $remote_types = $remote->dataTypes();
+    $remote_types = $remote->entities();
     foreach ($remote->events() as $event => $event_info) {
       // Don't add in events, that stem from another site.
       $is_valid = array_diff_key(array_flip(array('label', 'variables')), $event_info) == array();
@@ -49,7 +49,7 @@ function rules_web_remote_rules_event_info() {
 function rules_web_remote_rules_data_info() {
   $types = array();
   foreach (entity_load('rules_web_remote', FALSE) as $name => $remote) {
-    foreach ($remote->dataTypes() as $type => $type_info) {
+    foreach ($remote->entities() as $type => $type_info) {
       // Don't add in entity types, that stem from another site.
       if (strpos($type, 'rules_web_') !== 0) {
         $label = isset($type_info['label']) ? $type_info['label'] : $type;

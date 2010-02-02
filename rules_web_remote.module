@@ -57,7 +57,7 @@ function rules_web_remote_entity_info_alter(&$info) {
   unset($remotes['self']);
 
   foreach ($remotes as $name => $remote) {
-    foreach ($remote->dataTypes() as $type => $type_info) {
+    foreach ($remote->entities() as $type => $type_info) {
       // Don't add in entity types, that stem from another site.
       if (strpos($type, 'rules_web_') !== 0) {
         $info['rules_web_' . $name . '_' . $type] = array_intersect_key($type_info, array_flip(array('label', 'object keys')));
@@ -84,7 +84,7 @@ function rules_web_remote_entity_info_alter(&$info) {
 function rules_web_remote_entity_property_info() {
   $info = array();
   foreach (entity_load('rules_web_remote', FALSE) as $name => $remote) {
-    foreach ($remote->dataTypes() as $type => $type_info) {
+    foreach ($remote->entities() as $type => $type_info) {
       // Don't add in entity types, that stem from another site.
       if (strpos($type, 'rules_web_') !== 0) {
         $info['rules_web_' . $name . '_' . $type] = _rules_web_remote_get_property_info($type_info);
