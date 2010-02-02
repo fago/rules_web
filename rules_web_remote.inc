@@ -10,6 +10,11 @@
  */
 function rules_web_remote_notify($remote) {
   if (($json = file_get_contents('php://input')) && $data = @drupal_json_decode($json)) {
+    // Check message token.
+    if (!rules_web_remote_valid_message($remote, $data)) {
+      drupal_add_http_header('403 Forbidden');
+      return;
+    }
     $events = $remote->events();
     if (!empty($data['event_name']) && !empty($data['event_data']) && isset($events[$data['event_name']])) {
       $name = 'rules_web_' . $remote->name . '_' . $data['event_name'];
@@ -41,6 +46,20 @@ function rules_web_remote_notify($remote) {
 }
 
 /**
+ * Checks whether the provided message is a valid event notification by checking
+ * the token.
+ */
+function rules_web_remote_valid_message($remote, $data) {
+  if (isset($data['time']) && isset($data['token'])) {
+    // We don't accept too old messages.
+    if (($time = (int)$data['time']) + 3600 > time()) {
+      return $data['token'] === md5($time . md5($remote->token));
+    }
+  }
+  return FALSE;
+}
+
+/**
  * Class representing remote sites.
  */
 class RulesWebRemote extends EntityDB {
@@ -50,11 +69,16 @@ class RulesWebRemote extends EntityDB {
   public $name;
   public $label;
   public $url;
+  public $token;
 
   protected $endpoint = NULL;
 
   function __construct($values = array(), $entity_type = 'rules_web_remote') {
     parent::__construct($values, $entity_type);
+    // Make sure there is a token for communicating with the remote.
+    if (!isset($this->token)) {
+      $this->token = drupal_get_token(time());
+    }
   }
 
   public function access($account = NULL) {
@@ -155,7 +179,6 @@ class RulesWebRemote extends EntityDB {
   }
 }
 
-
 /**
  * Interface for remote endpoints. In case of any errors the implementing
  * classes should throw exceptions.
@@ -245,6 +268,7 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
       $this->client()->post($url, array(
          'url' => url('rules_web/rules_web_remote/' . $this->remote->name . '/notify', array('absolute' => TRUE)),
          'http_auth' => rules_web_remote_get_http_auth(),
+         'token' => $this->remote->token,
       ));
     }
   }
@@ -253,6 +277,7 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
     if (valid_url($url = $this->url . "rules_web_hook/$event/unsubscribe.json", TRUE)) {
       $this->client()->post($url, array(
          'url' => url('rules_web/rules_web_remote/' . $this->remote->name . '/notify', array('absolute' => TRUE)),
+         'token' => $this->remote->token,
       ));
     }
   }

@@ -120,32 +120,36 @@ function rules_web_hook_list_entity_metadata($account = NULL) {
  */
 function rules_web_hook_subscribe($crud_object, $args) {
   if ($hook = $crud_object->load($args[0])) {
-    $url = $args[1];
-    $data = $args[2] + array('http_auth' => NULL);
+    if (valid_url($url = (string)$args[1])) {
+      $data = $args[2] + array('http_auth' => NULL);
 
-    try {
-      // Verify the URL is valid except if it's from our own site (tests!).
-      if (strpos($url, $GLOBALS['base_url'] !== 0)) {
-        $client = rules_web_hook_get_client($data['http_auth']);
-        $client->post($url, array(
-          'handshake' => TRUE,
-        ));
+      try {
+        // Verify the URL is valid except if it's from our own site (tests!).
+        if (strpos($url, $GLOBALS['base_url'] !== 0)) {
+          $client = rules_web_hook_get_client($data['http_auth']);
+          $client->post($url, array(
+            'handshake' => TRUE,
+            'token' => rules_web_hook_hash_token((string)$data['token'], $time = time()),
+            'time' => $time,
+          ));
+        }
+
+        db_merge('rules_web_hook_subscriber')
+          ->key(array('hook' => $hook->name, 'url' => $url))
+          ->fields(array(
+            'uid' => $GLOBALS['user']->uid,
+            'http_auth' => serialize($data['http_auth']),
+            'token' => (string)$data['token'],
+          ))
+          ->execute();
+
+        return TRUE;
       }
-
-      db_merge('rules_web_hook_subscriber')
-        ->key(array('hook' => $hook->name, 'url' => $url))
-        ->fields(array(
-          'uid' => $GLOBALS['user']->uid,
-          'http_auth' => serialize($data['http_auth']),
-        ))
-        ->execute();
-
-      return TRUE;
+      catch (Exception $e) {
+        // Troubles connecting to $url.
+      }
     }
-    catch (Exception $e) {
-      // Troubles connecting to $url.
-      services_error('Connecting to provided URL fails.', 406);
-    }
+    services_error('Connecting to provided URL fails.', 406);
   }
   services_error('Hook not found.', 404);
 }
@@ -154,14 +158,15 @@ function rules_web_hook_subscribe($crud_object, $args) {
  * Service resource action callback invoked via the entity resource crud object.
  */
 function rules_web_hook_unsubscribe($crud_object, $args) {
-
-  db_delete('rules_web_hook_subscriber')
-    ->condition('hook', $args[0])
-    ->condition('url', $args[1])
-    ->condition('uid', $GLOBALS['user']->uid)
-    ->execute();
-
-  return TRUE;
+  if (isset($args[2]['token'])) {
+    db_delete('rules_web_hook_subscriber')
+      ->condition('hook', (string)$args[0])
+      ->condition('url', (string)$args[1])
+      ->condition('uid', $GLOBALS['user']->uid)
+      ->condition('token', (string)$args[2]['token'])
+      ->execute();
+    return TRUE;
+  }
 }
 
 

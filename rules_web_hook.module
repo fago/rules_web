@@ -63,7 +63,7 @@ function rules_web_hook_get_client($auth = NULL) {
   }
   // Add http auth credentials if necessary.
   $client->curlOpts[CURLOPT_USERPWD] = !empty($auth['username']) ? $auth['username'] . ':' . $auth['password'] : '';
-  $client->curlOpts[CURLOPT_HTTPAUTH] = !empty($auth['method']) ? $auth['method'] : '';
+  $client->curlOpts[CURLOPT_HTTPAUTH] = !empty($auth['method']) ? (int)$auth['method'] : '';
   return $client;
 }
 
@@ -90,6 +90,7 @@ function rules_web_hook_invoke($hook_name, $args = array(), $state = NULL) {
     }
   }
   // Send notifications to all subscribed HTTP callbacks.
+  $time = time();
   $query = db_select('rules_web_hook_subscriber', 'rs')
     ->fields('rs')
     ->condition('hook', $hook_name);
@@ -97,13 +98,26 @@ function rules_web_hook_invoke($hook_name, $args = array(), $state = NULL) {
   foreach ($query->execute() as $row) {
     try {
       $client = rules_web_hook_get_client(unserialize($row->http_auth));
-      $client->post($row->url, array('event_name' => $hook_name, 'event_data' => $args));
+      $client->post($row->url, array(
+        'event_name' => $hook_name,
+        'event_data' => $args,
+        'token' => rules_web_hook_hash_token($row->token, $time),
+        'time' => $time,
+      ));
     }
     catch (erException $e) {
       $args = array('%name' => $hook_name, '%url' => $url, '%message' => $e->getMessage());
       watchdog('rules web hooks', 'Error sending hook %name notification to %url. Error message: %message.', $args, WATCHDOG_WARNING);
     }
   }
+}
+
+/**
+ * Hashes the token and the provided timestamp.
+ */
+function rules_web_hook_hash_token($token, $timestamp) {
+  // A single md5() is vulnerable to length-extension attacks, so use it twice.
+  return md5($timestamp . md5($token));
 }
 
 

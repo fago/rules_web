@@ -64,16 +64,14 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
    * @see rules_web_test_default_rules_web_remote()
    */
   public function remoteAddCurlOptions($remote) {
-    $remote->settings = array(
-      'curl options' => array(
-        // For testing skip ssl verification.
-        CURLOPT_SSL_VERIFYPEER => FALSE,
-        CURLOPT_SSL_VERIFYHOST => FALSE,
-        // For testing just keep the current session.
-        CURLOPT_COOKIE => $this->session_name . '=' . $this->session_id,
-        // Pass through errors and debug statements to simpletest.
-        CURLOPT_HEADERFUNCTION => array(&$this, 'publicCurlHeaderCallback'),
-      ),
+    $remote->settings['curl options'] = array(
+      // For testing skip ssl verification.
+      CURLOPT_SSL_VERIFYPEER => FALSE,
+      CURLOPT_SSL_VERIFYHOST => FALSE,
+      // For testing just keep the current session.
+      CURLOPT_COOKIE => $this->session_name . '=' . $this->session_id,
+      // Pass through errors and debug statements to simpletest.
+      CURLOPT_HEADERFUNCTION => array(&$this, 'publicCurlHeaderCallback'),
     );
     // Add in the simpletest http auth credentials, if any.
     if (isset($this->httpauth_credentials)) {
@@ -170,10 +168,13 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     $client = rules_web_hook_get_client();
     $client->curlOpts = $remote->settings['curl options'];
 
+    $time = time();
     $callback_url = url('rules_web/rules_web_remote/self/notify', array('absolute' => TRUE));
     $client->post($callback_url, array(
        'event_name' => 'test',
        'event_data' => array('node' => $remote_node),
+       'time' => $time,
+       'token' => rules_web_hook_hash_token($remote->token, $time),
     ));
 
     $node = node_load($node->nid, NULL, TRUE);

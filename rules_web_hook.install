@@ -76,6 +76,12 @@ function rules_web_hook_schema() {
         'not null' => FALSE,
         'description' => 'HTTP authentication credentials.',
       ),
+      'token' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'description' => 'The request token needed for sending notifications.',
+      ),
     ),
     'primary key' => array('hook', 'url'),
   );

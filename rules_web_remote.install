@@ -66,6 +66,12 @@ function rules_web_remote_schema() {
         'serialize' => TRUE,
         'description' => 'Data describing the authentication method.',
       ),
+      'token' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'description' => 'The request token needed to check for valid notifications.',
+      ),
     ),
     'primary key' => array('id'),
     'foreign keys' => array(
