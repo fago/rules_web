@@ -194,7 +194,10 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     // Test invoking the web hook and sending out subscribtion notifications by
     // setting the title of the node to the title of the passed node (foo2).
     $node2 = $this->drupalCreateNode(array('type' => 'article', 'title' => 'foo2'));
-    rules_web_hook_invoke('test', array('node' => $node2));
+    //rules_web_hook_invoke('test', array('node' => $node2));
+    // Use the action to invoke the hook.
+    rules_action('web_hook_invoke', array('hook' => 'test'))->execute($node2);
+
     $node = node_load($node->nid, NULL, TRUE);
     $this->assertEqual($node->title, 'foo2', 'Sent event notification to subscriber and reacted.');
 

@@ -68,45 +68,52 @@ function rules_web_hook_get_client($auth = NULL) {
 }
 
 /**
+ * Loads a web hook object.
+ */
+function rules_web_hook_load($name) {
+  return reset(entity_load('rules_web_hook', array($name)));
+}
+
+/**
  * Invoke a web hook.
  *
- * @param $name
- *   The name of the web hook to invoke.
+ * @param $hook
+ *   The object of the hook to invoke.
  * @param $args
  *   An array of arguments to pass to the hook, keyed with the variable names
  *   as described in $hook->variables. Optionally the arguments may be rules
- *   data wrappers.
+ *   data wrappers or entity metadata wrapper.
  * @param $state
  *   The rules evaluateion state, if invoked during a rules evaluation.
  */
-function rules_web_hook_invoke($hook_name, $args = array(), $state = NULL) {
-  $hook = reset(entity_load('rules_web_hook', array($hook_name)));
-
+function rules_web_hook_invoke($hook, $args = array(), $state = NULL) {
   // Get the actual property values by applying all getter callbacks.
   foreach ($hook->variables as $name => $var_info) {
-    $var = rules_wrap_data($args[$name], $var_info);
-    if ($var instanceof RulesDataMetadataWrapperInterface) {
-      $args[$name] = EntityResourceServicesCRUD::getData($var->metadataWrapper($state));
+    if ($args[$name] instanceof EntityMetadataWrapper) {
+      $args[$name] = EntityResourceServicesCRUD::getData($args[$name]);
+    }
+    elseif (($wrapper = rules_wrap_data($args[$name], $var_info)) && $wrapper instanceof RulesDataMetadataWrapperInterface) {
+      $args[$name] = EntityResourceServicesCRUD::getData($wrapper->metadataWrapper($state));
     }
   }
   // Send notifications to all subscribed HTTP callbacks.
   $time = time();
   $query = db_select('rules_web_hook_subscriber', 'rs')
     ->fields('rs')
-    ->condition('hook', $hook_name);
+    ->condition('hook', $hook->name);
 
   foreach ($query->execute() as $row) {
     try {
       $client = rules_web_hook_get_client(unserialize($row->http_auth));
       $client->post($row->url, array(
-        'event_name' => $hook_name,
+        'event_name' => $hook->name,
         'event_data' => $args,
         'token' => rules_web_hook_hash_token($row->token, $time),
         'time' => $time,
       ));
     }
-    catch (erException $e) {
-      $args = array('%name' => $hook_name, '%url' => $url, '%message' => $e->getMessage());
+    catch (Exception $e) {
+      $args = array('%name' => $hook->name, '%url' => $url, '%message' => $e->getMessage());
       watchdog('rules web hooks', 'Error sending hook %name notification to %url. Error message: %message.', $args, WATCHDOG_WARNING);
     }
   }

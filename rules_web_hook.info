@@ -5,6 +5,7 @@ package = Rules
 version = VERSION
 core = 7.x
 files[] = rules_web_hook.module
+files[] = rules_web_hook.rules.inc
 files[] = rules_web_hook.install
 files[] = rules_web_hook.services.inc
 dependencies[] = rules
