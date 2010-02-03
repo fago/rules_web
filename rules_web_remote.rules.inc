@@ -11,8 +11,7 @@
  */
 function rules_web_remote_rules_event_info() {
   $events = array();
-  $cache = rules_get_cache();
-  $valid_types = $cache['data_info'] + entity_get_info();
+  $valid_types = rules_fetch_data('data_info');
 
   foreach (entity_load('rules_web_remote', FALSE) as $name => $remote) {
     $remote_types = $remote->entities();

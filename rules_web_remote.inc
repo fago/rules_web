@@ -23,8 +23,8 @@ function rules_web_remote_notify($remote) {
         $event_args = $event_set->argumentInfo();
         if (($args = array_intersect_key((array)$data['event_data'], $event_args)) && count($args) == count($event_args)) {
           $event_set->execute($args);
-          $t_args = array('%event' => $data['event_name'], '%remote' => $remote->label, '%log' => RulesLog::logger()->render());
-          watchdog('rules web remote', 'Event %event of remote %name triggered rule evaluation: %log', $t_args, WATCHDOG_NOTICE);
+          $t_args = array('%event' => $data['event_name'], '%name' => $remote->label, '!log' => RulesLog::logger()->render());
+          watchdog('rules web remote', 'Event %event of remote %name triggered rule evaluation: !log', $t_args, WATCHDOG_NOTICE);
         }
       }
       else {
@@ -65,13 +65,13 @@ function rules_web_remote_valid_message($remote, $data) {
 class RulesWebRemote extends EntityDB {
 
   public $settings = array();
-  public $cache = array();
   public $name;
   public $label;
   public $url;
   public $token;
 
   protected $endpoint = NULL;
+  protected $info = array();
 
   function __construct($values = array(), $entity_type = 'rules_web_remote') {
     parent::__construct($values, $entity_type);
@@ -114,39 +114,40 @@ class RulesWebRemote extends EntityDB {
   }
 
   public function events() {
-    if (!isset($this->cache['events'])) {
-      $this->refreshCache();
+    if (!isset($this->info['events'])) {
+      $this->refreshInfo();
     }
-    return !empty($this->cache['events']) ? $this->cache['events'] : array();
+    return !empty($this->info['events']) ? $this->info['events'] : array();
   }
 
   public function entities() {
-    if (!isset($this->cache['entities'])) {
-      $this->refreshCache();
+    if (!isset($this->info['entities'])) {
+      $this->refreshInfo();
     }
-    return !empty($this->cache['entities']) ? $this->cache['entities'] : array();
+    return !empty($this->info['entities']) ? $this->info['entities'] : array();
   }
 
   public function actions() {
-    if (!isset($this->cache['actions'])) {
-      $this->refreshCache();
+    if (!isset($this->info['actions'])) {
+      $this->refreshInfo();
     }
-    return !empty($this->cache['actions']) ? $this->cache['actions'] : array();
+    return !empty($this->info['actions']) ? $this->info['actions'] : array();
   }
 
   public function conditions() {
-    if (!isset($this->cache['conditions'])) {
-      $this->refreshCache();
+    if (!isset($this->info['conditions'])) {
+      $this->refreshInfo();
     }
-    return !empty($this->cache['conditions']) ? $this->cache['conditions'] : array();
+    return !empty($this->info['conditions']) ? $this->info['conditions'] : array();
   }
 
-  protected function refreshCache() {
+  protected function refreshInfo() {
     try {
-      $this->cache['entities'] = $this->endpoint()->entities();
-      $this->cache['actions'] = $this->endpoint()->actions();
-      $this->cache['conditions'] = $this->endpoint()->conditions();
-      $this->cache['events'] = $this->endpoint()->events();
+      $this->info['entities'] = $this->endpoint()->entities();
+      $this->info['actions'] = $this->endpoint()->actions();
+      $this->info['conditions'] = $this->endpoint()->conditions();
+      $this->info['events'] = $this->endpoint()->events();
+      $this->storeInfo();
     }
     catch (Exception $e) {
       $args = array('%name' => $this->name, '%message' => $e->getMessage());
@@ -155,11 +156,15 @@ class RulesWebRemote extends EntityDB {
   }
 
   public function clearCache() {
-    $this->cache = array();
+    $this->info = array();
   }
 
   public function subscribe($event) {
     try {
+      if (empty($this->info)) {
+        // Make sure the token is stored so it won't change in future.
+        $this->refreshInfo();
+      }
       $this->endpoint()->subscribe($event);
     }
     catch (Exception $e) {
@@ -177,6 +182,55 @@ class RulesWebRemote extends EntityDB {
       watchdog('rules remote', 'Error unsubscribing from event %event of remote site %name. Error message: %message.', $args, WATCHDOG_ERROR);
     }
   }
+
+  /**
+   * Stores the token and remote metadata independent from the remote site
+   * object itself, so a remote site may live in code via the default hook but
+   * still store this information.
+   */
+  protected function storeInfo() {
+    db_merge('rules_web_remote_info')
+      ->key(array('name' => $this->name))
+      ->fields(array(
+        'info' => serialize($this->info),
+        'token' => $this->token,
+      ))
+      ->execute();
+  }
+
+  public function save() {
+    parent::save();
+    $this->storeInfo();
+  }
+
+  /**
+   * Loads the stored info for the given remote site objects.
+   */
+  public static function attachLoad($remotes) {
+    $result = db_select('rules_web_remote_info', 'r')
+    ->fields('r')
+    ->condition('name', array(array_keys($remotes)))
+    ->execute();
+
+    foreach ($result as $record) {
+      $remotes[$record->name]->info = unserialize($record->info);
+      $remotes[$record->name]->token = $record->token;
+    }
+  }
+}
+
+/**
+ * Implements hook_rules_web_remote_load().
+ */
+function rules_web_remote_rules_web_remote_load($remotes) {
+  RulesWebRemote::attachLoad($remotes);
+}
+
+/**
+ * Implements hook_default_rules_web_remote_alter().
+ */
+function rules_web_remote_default_rules_web_remote_alter($remotes) {
+  RulesWebRemote::attachLoad($remotes);
 }
 
 /**

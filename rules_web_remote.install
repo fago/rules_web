@@ -25,7 +25,7 @@ function rules_web_remote_schema() {
       ),
       'name' => array(
         'type' => 'varchar',
-        'length' => '8',
+        'length' => '12',
         'not null' => TRUE,
         'description' => 'The name of the remote site.',
       ),
@@ -53,18 +53,32 @@ function rules_web_remote_schema() {
         'serialize' => TRUE,
         'description' => 'The endpoint type specific settings.',
       ),
-      'cache' => array(
-        'type' => 'text',
-        'not null' => FALSE,
-        'serialize' => TRUE,
-        'size' => 'big',
-        'description' => 'May be used to cache endpoint provided information.',
-      ),
       'authentication' => array(
         'type' => 'text',
         'not null' => FALSE,
         'serialize' => TRUE,
         'description' => 'Data describing the authentication method.',
+      ),
+    ),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'name' => array('name'),
+    ),
+  );
+  $schema['rules_web_remote_info'] = array(
+    'fields' => array(
+      'name' => array(
+        'type' => 'varchar',
+        'length' => '12',
+        'not null' => TRUE,
+        'description' => 'The name of the remote site.',
+      ),
+      'info' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'serialize' => TRUE,
+        'size' => 'big',
+        'description' => 'May be used to store endpoint provided information.',
       ),
       'token' => array(
         'type' => 'varchar',
@@ -73,9 +87,9 @@ function rules_web_remote_schema() {
         'description' => 'The request token needed to check for valid notifications.',
       ),
     ),
-    'primary key' => array('id'),
+    'primary key' => array('name'),
     'foreign keys' => array(
-      'id' => array('rules_config' => 'id'),
+      'name' => array('rules_web_remote' => 'name'),
     ),
   );
   return $schema;

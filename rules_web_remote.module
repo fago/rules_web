@@ -72,6 +72,15 @@ function rules_web_remote_entity_info_alter(&$info) {
         foreach ($type_info['bundles'] as $bundle => $bundle_info) {
           $info['rules_web_' . $name . '_' . $type]['bundles'][$bundle] = array_intersect_key($bundle_info, array_flip(array('label')));
         }
+        // Apply defaults as entity_get_info().
+        $info['rules_web_' . $name . '_' . $type] += array(
+          'static cache' => TRUE,
+          'load hook' => 'rules_web_' . $name . '_' . $type . '_load',
+          'view modes' => array(),
+          'object keys' => array(),
+          'cacheable' => TRUE,
+          'translation' => array(),
+        );
       }
     }
   }

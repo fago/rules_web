@@ -34,8 +34,8 @@ function rules_web_hook_permission() {
       'title' => t('Administer web hooks'),
       'description' => t('Define web hooks and administer remote sites.'),
     ),
-    'use web hooks' =>  array(
-      'title' => t('Make use of web hooks'),
+    'subscribe to web hooks' =>  array(
+      'title' => t('Subscribe to web hooks'),
     ),
   );
 }
@@ -47,7 +47,7 @@ function rules_web_hook_permission() {
  */
 function rules_web_hook_access_callback($op, $entity_type, $entity = NULL, $account = NULL) {
   if ($op == 'view') {
-    return user_access('use web hooks', $account);
+    return user_access('subscribe to web hooks', $account);
   }
   return user_access('administer web hooks', $account);
 }
@@ -60,8 +60,14 @@ function rules_web_hook_get_client($auth = NULL) {
 
   if (!isset($client)) {
     $client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
+    // Hack for testing. TODO: remove.
+    $client->curlOpts = array(
+      CURLOPT_SSL_VERIFYPEER => FALSE, // For testing skip ssl verification.
+      CURLOPT_SSL_VERIFYHOST => FALSE, // For testing skip ssl verification.]
+    );
   }
   // Add http auth credentials if necessary.
+
   $client->curlOpts[CURLOPT_USERPWD] = !empty($auth['username']) ? $auth['username'] . ':' . $auth['password'] : '';
   $client->curlOpts[CURLOPT_HTTPAUTH] = !empty($auth['method']) ? (int)$auth['method'] : '';
   return $client;
@@ -113,7 +119,7 @@ function rules_web_hook_invoke($hook, $args = array(), $state = NULL) {
       ));
     }
     catch (Exception $e) {
-      $args = array('%name' => $hook->name, '%url' => $url, '%message' => $e->getMessage());
+      $args = array('%name' => $hook->name, '%url' => $row->url, '%message' => $e->getMessage());
       watchdog('rules web hooks', 'Error sending hook %name notification to %url. Error message: %message.', $args, WATCHDOG_WARNING);
     }
   }
@@ -126,7 +132,6 @@ function rules_web_hook_hash_token($token, $timestamp) {
   // A single md5() is vulnerable to length-extension attacks, so use it twice.
   return md5($timestamp . md5($token));
 }
-
 
 /**
  * Implements hook_default_services_endpoint().
@@ -282,5 +287,5 @@ function rules_web_hook_default_services_endpoint() {
       ),
     ),
   );
-  return array('test' => $endpoint);
+  return array('rules_web_hook' => $endpoint);
 }
