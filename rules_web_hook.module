@@ -60,14 +60,9 @@ function rules_web_hook_get_client($auth = NULL) {
 
   if (!isset($client)) {
     $client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
-    // Hack for testing. TODO: remove.
-    $client->curlOpts = array(
-      CURLOPT_SSL_VERIFYPEER => FALSE, // For testing skip ssl verification.
-      CURLOPT_SSL_VERIFYHOST => FALSE, // For testing skip ssl verification.]
-    );
+    $client->curlOpts = variable_get('rules_web_custom_curl_options', array());
   }
   // Add http auth credentials if necessary.
-
   $client->curlOpts[CURLOPT_USERPWD] = !empty($auth['username']) ? $auth['username'] . ':' . $auth['password'] : '';
   $client->curlOpts[CURLOPT_HTTPAUTH] = !empty($auth['method']) ? (int)$auth['method'] : '';
   return $client;

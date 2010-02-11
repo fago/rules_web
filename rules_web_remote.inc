@@ -303,6 +303,7 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
       if (!empty($this->remote->settings['curl options'])) {
         $this->client->curlOpts = $this->remote->settings['curl options'];
       }
+      $this->client->curlOpts += variable_get('rules_web_custom_curl_options', array());
     }
     return $this->client;
   }
