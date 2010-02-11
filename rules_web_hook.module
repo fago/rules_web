@@ -139,11 +139,11 @@ function rules_web_hook_hash_token($token, $timestamp) {
 function rules_web_hook_default_services_endpoint() {
   $endpoint = new stdClass;
   $endpoint->disabled = FALSE;
-  $endpoint->endpoint = 'rules_web_hook';
+  $endpoint->name = 'rules_web_hook';
   $endpoint->title = 'Rules Web Hooks Endpoint';
   $endpoint->server = 'rest_server';
   $endpoint->path = 'rules_web';
-  $endpoint->authentication = '';
+  $endpoint->authentication = array();
   $endpoint->authentication_settings = FALSE;
   $endpoint->resources = array(
     'node' => array(
