@@ -12,7 +12,7 @@ function rules_web_remote_notify($remote) {
   if (($json = file_get_contents('php://input')) && $data = @drupal_json_decode($json)) {
     // Check message token.
     if (!rules_web_remote_valid_message($remote, $data)) {
-      drupal_add_http_header('403 Forbidden');
+      drupal_add_http_header('Status', '403 Forbidden');
       return;
     }
     $events = $remote->events();
@@ -22,6 +22,13 @@ function rules_web_remote_notify($remote) {
         // Make sure passed arguments are complete and invoke event.
         $event_args = $event_set->argumentInfo();
         if (($args = array_intersect_key((array)$data['event_data'], $event_args)) && count($args) == count($event_args)) {
+          // Make sure data passed for entities is an object.
+          $info = entity_get_info();
+          foreach ($args as $name => $value) {
+            if (isset($info[$event_args[$name]['type']]) && is_array($value)) {
+              $args[$name] = (object)$value;
+            }
+          }
           $event_set->execute($args);
           $t_args = array('%event' => $data['event_name'], '%name' => $remote->label, '!log' => RulesLog::logger()->render());
           watchdog('rules web remote', 'Event %event of remote %name triggered rule evaluation: !log', $t_args, WATCHDOG_NOTICE);
@@ -37,11 +44,11 @@ function rules_web_remote_notify($remote) {
       return TRUE;
     }
     else {
-      drupal_add_http_header('404 Not Found');
+      drupal_add_http_header('Status', '404 Not Found');
     }
   }
   else {
-    drupal_add_http_header('415 Unsupported Media Type');
+    drupal_add_http_header('Status', '415 Unsupported Media Type');
   }
 }
 
@@ -62,7 +69,7 @@ function rules_web_remote_valid_message($remote, $data) {
 /**
  * Class representing remote sites.
  */
-class RulesWebRemote extends EntityDB {
+class RulesWebRemote extends EntityDBExtendable {
 
   public $settings = array();
   public $name;
@@ -108,8 +115,8 @@ class RulesWebRemote extends EntityDB {
       return $this->endpoint()->load($type, $id);
     }
     catch (Exception $e) {
-      $args = array('%name' => $this->name, '%message' => $e->getMessage(), '%type' => $type, '%id' => $id);
-      throw new RulesException('Unable to load %id of type %type from the remote site %name. Error message: %message', $args, RulesLog::WARN);
+      $args = array('%name' => $this->name, '%message' => $e->getMessage(), '%type' => $type, '%id' => print_r($id,1));
+      throw new RulesException('Unable to load %id of type %type from the remote site %name. Error message: %message', $args, NULL, RulesLog::WARN);
     }
   }
 
@@ -368,9 +375,6 @@ class RulesWebRemoteEntityController extends DrupalDefaultEntityController {
    * support using $conditions or revisions.
    */
   public function load($ids = array(), $conditions = array()) {
-    $this->ids = $ids;
-    $this->conditions = $conditions;
-
     $entities = array();
 
     // Create a new variable which is either a prepared version of the $ids
@@ -378,25 +382,25 @@ class RulesWebRemoteEntityController extends DrupalDefaultEntityController {
     // were passed. The $ids array is reduced as items are loaded from cache,
     // and we need to know if it's empty for this reason to avoid querying the
     // database when all requested entities are loaded from cache.
-    $passed_ids = !empty($this->ids) ? array_flip($this->ids) : FALSE;
+    $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
     // Try to load entities from the static cache, if the entity type supports
     // static caching.
     if ($this->cache) {
-      $entities += $this->cacheGet($this->ids, $this->conditions);
+      $entities += $this->cacheGet($ids, $conditions);
       // If any entities were loaded, remove them from the ids still to load.
       if ($passed_ids) {
-        $this->ids = array_keys(array_diff_key($passed_ids, $entities));
+        $ids = array_keys(array_diff_key($passed_ids, $entities));
       }
     }
 
     // Load any remaining entities from the remote site.
-    if ($this->ids === FALSE || $this->ids) {
-      foreach ($this->ids as $id) {
+    if ($ids === FALSE || $ids) {
+      foreach ($ids as $id) {
         $queried_entities[$id] = $this->remote->load($this->entityInfo['rules web remote']['type'], $id);
       }
     }
 
-    // Pass all entities loaded from the database through $this->attachLoad(),
+    // Pass all entities loaded through $this->attachLoad(),
     // which attaches fields (if supported by the entity type) and calls the
     // entity type specific load callback, for example hook_node_load().
     if (!empty($queried_entities)) {

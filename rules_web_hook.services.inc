@@ -91,17 +91,16 @@ function rules_web_hook_list_entity_metadata($account = NULL) {
       $return[$type] = array_intersect_key($entity_info, array_flip(array('label', 'object keys')));
       $wrapper = entity_metadata_wrapper($type);
       $metadata = $wrapper->dataInfo();
-      foreach ($wrapper as $name => $info) {
-        if ($wrapper->$name->access('view', $account)) {
-          $return[$type]['properties'][$name] = array_intersect_key($info, array_flip(array('label', 'type', 'description', 'sanitize')));
+      foreach ($wrapper as $name => $property) {
+        if ($property->access('view', $account)) {
+          $return[$type]['properties'][$name] = array_intersect_key($property->info(), array_flip(array('label', 'type', 'description', 'sanitize')));
         }
       }
       // Add in bundle properties
       foreach ($metadata['bundles'] as $bundle => $bundle_info) {
         $return[$type]['bundles'][$bundle] = array_intersect_key($bundle_info, array_flip(array('label')));
-
         if (!empty($bundle_info['properties'])) {
-          $wrapper = entity_metadata_wrapper($type, NULL, array('bundle' => $bundle));
+          $wrapper = entity_metadata_wrapper($type, $data = NULL, array('bundle' => $bundle));
           foreach ($bundle_info['properties'] as $name => $info) {
             if ($wrapper->$name->access('view', $account)) {
               $return[$type]['bundles'][$bundle]['properties'][$name] = array_intersect_key($info, array_flip(array('label', 'type', 'description', 'sanitize')));

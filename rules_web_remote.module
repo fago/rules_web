@@ -59,8 +59,10 @@ function rules_web_remote_entity_info_alter(&$info) {
     foreach ($remote->entities() as $type => $type_info) {
       // Don't add in entity types, that stem from another site.
       if (strpos($type, 'rules_web_') !== 0) {
-        $info['rules_web_' . $name . '_' . $type] = array_intersect_key($type_info, array_flip(array('label', 'object keys')));
-        $info['rules_web_' . $name . '_' . $type] += array(
+        $type_info += array('object keys' => array(), 'label' => $type);
+        $info['rules_web_' . $name . '_' . $type] = array(
+          'label' => t('Remote %name %type', array('%name' => $remote->label, '%type' => $type_info['label'])),
+          'object keys' => $type_info['object keys'],
           'controller class' => 'RulesWebRemoteEntityController',
           'rules web remote' => array(
             'remote' => $name,
@@ -77,7 +79,6 @@ function rules_web_remote_entity_info_alter(&$info) {
           'static cache' => TRUE,
           'load hook' => 'rules_web_' . $name . '_' . $type . '_load',
           'view modes' => array(),
-          'object keys' => array(),
           'cacheable' => TRUE,
           'translation' => array(),
         );

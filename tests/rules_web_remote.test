@@ -139,11 +139,11 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     $node = $this->drupalCreateNode(array('type' => 'article', 'title' => 'foo'));
     $remote_node = reset(entity_load('rules_web_self_node', array($node->nid)));
 
-    // Test reactin on the remote event.
+    // Test reacting on the remote event.
     $rule = rules_reaction_rule();
     $rule->event('rules_web_self_test')
-         ->action('data_fetch', array('type' => 'node', 'param_id' => $node->nid))
-         ->action('data_set', array('data:select' => 'data_fetched:title', 'value:select' => 'node:title'))
+         ->action('entity_fetch', array('type' => 'node', 'id' => $node->nid))
+         ->action('data_set', array('data:select' => 'entity_fetched:title', 'value:select' => 'node:title'))
          ->save();
     rules_clear_cache(TRUE);
 
@@ -153,7 +153,6 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
 
     $node = node_load($node->nid, NULL, TRUE);
     $this->assertEqual($node->title, 'bar', 'Reacted on remote event.');
-
 
     // Now try again but invoke via a REST call.
     $node->title = 'foo';

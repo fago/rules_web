@@ -64,7 +64,7 @@ function rules_web_hook_action_invoke($hook_name) {
   $vars = array();
   foreach ($hook->variables as $name => $info) {
     // Use the args in the state so we can reuse existing rules data wrapper.
-    $vars[$name] = $state['execution arguments']['param_' . $name];
+    $vars[$name] = $state->currentArguments['param_' . $name];
   }
-  rules_web_hook_invoke($hook, $vars, $state);
+  rules_web_hook_invoke($hook, $vars);
 }

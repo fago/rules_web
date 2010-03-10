@@ -45,7 +45,7 @@ function rules_web_hook_permission() {
  *
  * @see rules_web_entity_info()
  */
-function rules_web_hook_access_callback($op, $entity_type, $entity = NULL, $account = NULL) {
+function rules_web_hook_access_callback($op, $entity = NULL, $account = NULL) {
   if ($op == 'view') {
     return user_access('subscribe to web hooks', $account);
   }
@@ -82,19 +82,14 @@ function rules_web_hook_load($name) {
  *   The object of the hook to invoke.
  * @param $args
  *   An array of arguments to pass to the hook, keyed with the variable names
- *   as described in $hook->variables. Optionally the arguments may be rules
- *   data wrappers or entity metadata wrapper.
- * @param $state
- *   The rules evaluateion state, if invoked during a rules evaluation.
+ *   as described in $hook->variables. Optionally the arguments may be entity
+ *   metadata wrapper.
  */
-function rules_web_hook_invoke($hook, $args = array(), $state = NULL) {
+function rules_web_hook_invoke($hook, $args = array()) {
   // Get the actual property values by applying all getter callbacks.
   foreach ($hook->variables as $name => $var_info) {
     if ($args[$name] instanceof EntityMetadataWrapper) {
-      $args[$name] = EntityResourceServicesCRUD::getData($args[$name]);
-    }
-    elseif (($wrapper = rules_wrap_data($args[$name], $var_info)) && $wrapper instanceof RulesDataMetadataWrapperInterface) {
-      $args[$name] = EntityResourceServicesCRUD::getData($wrapper->metadataWrapper($state));
+      $args[$name] = EntityResourceServicesCRUD::getData($args[$name], 'rules_web');
     }
   }
   // Send notifications to all subscribed HTTP callbacks.

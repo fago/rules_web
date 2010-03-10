@@ -48,6 +48,7 @@ function rules_web_test_default_rules_web_remote() {
  */
 
 function rules_web_test_inject_entity_types($remote) {
+  global $language;
   // Be sure info is initialized.
   entity_get_info();
   $info = &drupal_static('entity_get_info');
@@ -78,5 +79,6 @@ function rules_web_test_inject_entity_types($remote) {
       );
     }
   }
-  cache_set('entity_info', $info);
+  $langcode = $language->language;
+  cache_set("entity_info:$langcode", $info);
 }
