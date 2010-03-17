@@ -89,6 +89,12 @@ function rules_web_hook_list_entity_metadata($account = NULL) {
   foreach ($info as $type => $entity_info) {
     if (entity_metadata_entity_access('view', $type, NULL, $account)) {
       $return[$type] = array_intersect_key($entity_info, array_flip(array('label', 'object keys')));
+
+      // Make sure property names in the object keys don't contain underscores.
+      foreach ($return[$type]['object keys'] as $key => $value) {
+        $return[$type]['object keys'][$key] = str_replace('_', '-', $value);
+      }
+
       $wrapper = entity_metadata_wrapper($type);
       $metadata = $wrapper->dataInfo();
       foreach ($wrapper as $name => $property) {
@@ -99,6 +105,7 @@ function rules_web_hook_list_entity_metadata($account = NULL) {
       // Add in bundle properties
       foreach ($metadata['bundles'] as $bundle => $bundle_info) {
         $return[$type]['bundles'][$bundle] = array_intersect_key($bundle_info, array_flip(array('label')));
+
         if (!empty($bundle_info['properties'])) {
           $wrapper = entity_metadata_wrapper($type, $data = NULL, array('bundle' => $bundle));
           foreach ($bundle_info['properties'] as $name => $info) {
