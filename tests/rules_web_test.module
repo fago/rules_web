@@ -73,7 +73,7 @@ function rules_web_test_inject_entity_types($remote) {
         'load hook' => 'rules_web_' . $name . '_' . $type . '_load',
         'bundles' => array(),
         'view modes' => array(),
-        'object keys' => array(),
+        'entity keys' => array(),
         'cacheable' => TRUE,
         'translation' => array(),
       );

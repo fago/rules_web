@@ -15,7 +15,7 @@ function rules_web_hook_entity_info() {
       'controller class' => 'EntityAPIController',
       'base table' => 'rules_web_hook',
       'fieldable' => TRUE,
-      'object keys' => array(
+      'entity keys' => array(
         'id' => 'id',
         'name' => 'name',
       ),

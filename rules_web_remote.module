@@ -34,7 +34,7 @@ function rules_web_remote_entity_info() {
       'controller class' => 'EntityAPIController',
       'base table' => 'rules_web_remote',
       'fieldable' => TRUE,
-      'object keys' => array(
+      'entity keys' => array(
         'id' => 'id',
         'name' => 'name',
       ),
@@ -59,10 +59,10 @@ function rules_web_remote_entity_info_alter(&$info) {
     foreach ($remote->entities() as $type => $type_info) {
       // Don't add in entity types, that stem from another site.
       if (strpos($type, 'rules_web_') !== 0) {
-        $type_info += array('object keys' => array(), 'label' => $type);
+        $type_info += array('entity keys' => array(), 'label' => $type);
         $info['rules_web_' . $name . '_' . $type] = array(
           'label' => t('Remote %name %type', array('%name' => $remote->label, '%type' => $type_info['label'])),
-          'object keys' => $type_info['object keys'],
+          'entity keys' => $type_info['entity keys'],
           'controller class' => 'RulesWebRemoteEntityController',
           'rules web remote' => array(
             'remote' => $name,

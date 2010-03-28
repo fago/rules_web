@@ -88,11 +88,11 @@ function rules_web_hook_list_entity_metadata($account = NULL) {
   $return = array();
   foreach ($info as $type => $entity_info) {
     if (entity_metadata_entity_access('view', $type, NULL, $account)) {
-      $return[$type] = array_intersect_key($entity_info, array_flip(array('label', 'object keys')));
+      $return[$type] = array_intersect_key($entity_info, array_flip(array('label', 'entity keys')));
 
-      // Make sure property names in the object keys don't contain underscores.
-      foreach ($return[$type]['object keys'] as $key => $value) {
-        $return[$type]['object keys'][$key] = str_replace('_', '-', $value);
+      // Make sure property names in the entity keys don't contain underscores.
+      foreach ($return[$type]['entity keys'] as $key => $value) {
+        $return[$type]['entity keys'][$key] = str_replace('_', '-', $value);
       }
 
       $wrapper = entity_metadata_wrapper($type);
