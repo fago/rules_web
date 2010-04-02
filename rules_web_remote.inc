@@ -88,6 +88,9 @@ class RulesWebRemote extends EntityDBExtendable {
     }
   }
 
+  /**
+   * Determines access to the remote.
+   */
   public function access($account = NULL) {
     if (method_exists($this->endpoint(), 'access')) {
       return $this->endpoint()->access($account);
@@ -96,6 +99,8 @@ class RulesWebRemote extends EntityDBExtendable {
   }
 
   /**
+   * Returns the associated remote endpoint object.
+   *
    * @return RulesWebRemoteEndpointInterface
    */
   public function endpoint() {
@@ -107,8 +112,8 @@ class RulesWebRemote extends EntityDBExtendable {
   }
 
   /**
-   * Loads the data of the given type and id. In case of errors a RulesException
-   * is thrown.
+   * Loads the entity of the given type and id. In case of errors a
+   * RulesException is thrown.
    */
   public function load($type, $id) {
     try {
@@ -120,6 +125,9 @@ class RulesWebRemote extends EntityDBExtendable {
     }
   }
 
+  /**
+   * Returns info about events of the remote site.
+   */
   public function events() {
     if (!isset($this->info['events'])) {
       $this->refreshInfo();
@@ -127,6 +135,9 @@ class RulesWebRemote extends EntityDBExtendable {
     return !empty($this->info['events']) ? $this->info['events'] : array();
   }
 
+  /**
+   * Returns info about the entities of the remote site.
+   */
   public function entities() {
     if (!isset($this->info['entities'])) {
       $this->refreshInfo();
@@ -134,6 +145,20 @@ class RulesWebRemote extends EntityDBExtendable {
     return !empty($this->info['entities']) ? $this->info['entities'] : array();
   }
 
+  /**
+   * Returns info about the data types of the remote site, thus types being not
+   * entities.
+   */
+  public function dataTypes() {
+    if (!isset($this->info['dataTypes'])) {
+      $this->refreshInfo();
+    }
+    return !empty($this->info['dataTypes']) ? $this->info['dataTypes'] : array();
+  }
+
+  /**
+   * Returns info about the actions of the remote site.
+   */
   public function actions() {
     if (!isset($this->info['actions'])) {
       $this->refreshInfo();
@@ -141,6 +166,9 @@ class RulesWebRemote extends EntityDBExtendable {
     return !empty($this->info['actions']) ? $this->info['actions'] : array();
   }
 
+  /**
+   * Returns info about the conditions of the remote site.
+   */
   public function conditions() {
     if (!isset($this->info['conditions'])) {
       $this->refreshInfo();
@@ -151,6 +179,7 @@ class RulesWebRemote extends EntityDBExtendable {
   protected function refreshInfo() {
     try {
       $this->info['entities'] = $this->endpoint()->entities();
+      $this->info['dataTypes'] = $this->endpoint()->dataTypes();
       $this->info['actions'] = $this->endpoint()->actions();
       $this->info['conditions'] = $this->endpoint()->conditions();
       $this->info['events'] = $this->endpoint()->events();
@@ -166,6 +195,10 @@ class RulesWebRemote extends EntityDBExtendable {
     $this->info = array();
   }
 
+  /**
+   * Subscribes to the given event, so we get event notitifcations whenever the
+   * event occurs.
+   */
   public function subscribe($event) {
     try {
       if (empty($this->info)) {
@@ -180,6 +213,9 @@ class RulesWebRemote extends EntityDBExtendable {
     }
   }
 
+  /**
+   * Unsubscribes from the given event.
+   */
   public function unsubscribe($event) {
     try {
       $this->endpoint()->unsubscribe($event);
@@ -273,6 +309,12 @@ interface RulesWebRemoteEndpointInterface {
   public function entities();
 
   /**
+   * An array of info about data types used by the provided events/conditions/
+   * actions being not entities.
+   */
+  public function dataTypes();
+
+  /**
    * An array of definitions for the provided actions.
    */
   public function actions();
@@ -348,13 +390,9 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
     return $this->client()->get($this->url . 'entity_metadata.json');
   }
 
-  public function actions() {
-    return array();
-  }
-
-  public function conditions() {
-    return array();
-  }
+  public function actions() { }
+  public function conditions() { }
+  public function dataTypes() { }
 }
 
 /**
