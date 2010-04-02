@@ -98,7 +98,7 @@ class RulesWebRemote extends EntityDBExtendable {
   /**
    * @return RulesWebRemoteEndpointInterface
    */
-  protected function endpoint() {
+  public function endpoint() {
     if (!isset($this->endpoint)) {
       $types = rules_web_remote_get_types();
       $this->endpoint = new $types[$this->type]['class']($this);
