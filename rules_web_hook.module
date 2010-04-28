@@ -72,7 +72,8 @@ function rules_web_hook_get_client($auth = NULL) {
  * Loads a web hook object.
  */
 function rules_web_hook_load($name) {
-  return reset(entity_load('rules_web_hook', array($name)));
+  $return = entity_load('rules_web_hook', array($name));
+  return reset($return);
 }
 
 /**

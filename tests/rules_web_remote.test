@@ -137,7 +137,8 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
 
     // Get a remote node and invoke the event!
     $node = $this->drupalCreateNode(array('type' => 'article', 'title' => 'foo'));
-    $remote_node = reset(entity_load('rules_web_self_node', array($node->nid)));
+    $return = entity_load('rules_web_self_node', array($node->nid));
+    $remote_node = reset($return);
 
     // Test reacting on the remote event.
     $rule = rules_reaction_rule();
