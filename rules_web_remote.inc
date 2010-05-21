@@ -282,6 +282,8 @@ function rules_web_remote_default_rules_web_remote_alter($remotes) {
  */
 interface RulesWebRemoteEndpointInterface {
 
+  public function __construct(RulesWebRemote $remote);
+
   /**
    * Load remote data.
    */
@@ -323,6 +325,13 @@ interface RulesWebRemoteEndpointInterface {
    * An array of definitions for the provided conditions.
    */
   public function conditions();
+
+  /**
+   * Allows altering the configuration form of remote site definitions, such
+   * that the form can include endpoint type specific configuration settings.
+   */
+  public function formAlter(&$form, &$form_state);
+
 }
 
 /**
@@ -340,7 +349,7 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
    */
   protected  $client;
 
-  public function __construct($remote, $base_path = 'rules_web') {
+  public function __construct(RulesWebRemote $remote, $base_path = 'rules_web') {
     $this->remote = $remote;
     $this->url = $remote->url . '/' . $base_path . '/';
   }
@@ -393,6 +402,7 @@ class RulesWebRemoteEndpointWebHooks implements RulesWebRemoteEndpointInterface 
   public function actions() { }
   public function conditions() { }
   public function dataTypes() { }
+  public function formAlter(&$form, &$form_state) { }
 }
 
 /**
