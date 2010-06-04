@@ -53,8 +53,8 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
 
     rules_clear_cache(TRUE);
     drupal_static_reset();
-    cache_clear_all('entity_info', 'cache');
-    cache_clear_all('entity_property_info', 'cache');
+    cache_clear_all('entity_info', 'cache', TRUE);
+    cache_clear_all('entity_property_info', 'cache', TRUE);
     $remote->clearCache();
   }
 
@@ -107,6 +107,7 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
 
     module_load_include('inc', 'rules_web_hook', 'rules_web_hook.services');
     $this->assertTrue($remote->entities() == rules_web_hook_list_entity_metadata(), 'Data types returned.');
+
     $return = drupal_json_decode(drupal_json_encode(rules_web_hook_list_hooks()));
     $this->assertTrue($remote->events() == $return, 'Events returned.');
 
@@ -116,6 +117,7 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
 
     // Test loading data through entity_load().
     rules_web_test_inject_entity_types($remote);
+    entity_metadata_info_cache_clear();
     $return = entity_load('rules_web_self_user', array($user->uid));
     $remote_user = reset($return);
     $this->assertEqual($remote_user->name, $user->name, 'Remote user loaded with entity_load()');

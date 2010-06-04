@@ -47,7 +47,7 @@ function rules_web_remote_rules_data_info() {
   $types = array();
   foreach (entity_load('rules_web_remote', FALSE) as $name => $remote) {
     foreach ($remote->dataTypes() as $type => $type_info) {
-      $type_info = array_intersect_key($type_info, array_flip(array('label', 'data info'))) + array(
+      $type_info = array_intersect_key($type_info, array_flip(array('label', 'property info'))) + array(
         'wrap' => TRUE,
         'label' => t('Remote %label %type', array('%label' => $remote->label, '%type' => $type)),
       );
