@@ -130,7 +130,7 @@ class RulesWebRemote extends EntityDBExtendable {
    * Returns info about events of the remote site.
    */
   public function events() {
-    if (!isset($this->info['events'])) {
+    if (empty($this->info)) {
       $this->refreshInfo();
     }
     return !empty($this->info['events']) ? $this->info['events'] : array();
@@ -140,7 +140,7 @@ class RulesWebRemote extends EntityDBExtendable {
    * Returns info about the entities of the remote site.
    */
   public function entities() {
-    if (!isset($this->info['entities'])) {
+    if (empty($this->info)) {
       $this->refreshInfo();
     }
     return !empty($this->info['entities']) ? $this->info['entities'] : array();
@@ -151,7 +151,7 @@ class RulesWebRemote extends EntityDBExtendable {
    * entities.
    */
   public function dataTypes() {
-    if (!isset($this->info['dataTypes'])) {
+    if (empty($this->info)) {
       $this->refreshInfo();
     }
     return !empty($this->info['dataTypes']) ? $this->info['dataTypes'] : array();
@@ -161,7 +161,7 @@ class RulesWebRemote extends EntityDBExtendable {
    * Returns info about the actions of the remote site.
    */
   public function actions() {
-    if (!isset($this->info['actions'])) {
+    if (empty($this->info)) {
       $this->refreshInfo();
     }
     return !empty($this->info['actions']) ? $this->info['actions'] : array();
@@ -171,7 +171,7 @@ class RulesWebRemote extends EntityDBExtendable {
    * Returns info about the conditions of the remote site.
    */
   public function conditions() {
-    if (!isset($this->info['conditions'])) {
+    if (empty($this->info)) {
       $this->refreshInfo();
     }
     return !empty($this->info['conditions']) ? $this->info['conditions'] : array();

@@ -33,6 +33,7 @@ function rules_web_remote_rules_event_info() {
           // We don't support loading via handler for remote variables.
           unset($var_info['handler']);
         }
+        $event_info['group'] = t('Remote @label', array('@label' => $remote->label));
         // Add some info so we can easily get the remote for an event later on.
         $event_info['rules web remote']['remote'] = $name;
         $event_info['rules web remote']['event'] = $event;
