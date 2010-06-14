@@ -33,6 +33,9 @@ function rules_web_remote_rules_event_info() {
           // We don't support loading via handler for remote variables.
           unset($var_info['handler']);
         }
+        // Add some info so we can easily get the remote for an event later on.
+        $event_info['rules web remote']['remote'] = $name;
+        $event_info['rules web remote']['event'] = $event;
         $events['rules_web_' . $name . '_' . $event] = $event_info;
       }
     }

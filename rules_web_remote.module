@@ -162,9 +162,12 @@ function rules_web_remote_rules_endpoint_types() {
 
 /**
  * Load a single rules web remote.
+ *
+ * @return RulesWebRemote
+ *   The rules web remote site definition or FALSE.
  */
-function rules_web_remote_load($id) {
-  $return = entity_load('rules_web_remote', array($id));
+function rules_web_remote_load($name) {
+  $return = entity_load('rules_web_remote', array($name));
   return reset($return);
 }
 
@@ -178,5 +181,21 @@ function rules_web_remote_get_http_auth() {
       'username' => $username,
       'password' => $password,
     );
+  }
+}
+
+/**
+ * Implements hook_rules_event_set_alter().
+ */
+function rules_web_remote_rules_event_set_alter($event_name, RulesEventSet $event_set) {
+  // If a remote event is used make sure we are subscribed to it.
+  if (strpos($event_name, 'rules_web_') === 0) {
+    $info = $event_set->info();
+    if ($remote = rules_web_remote_load($info['rules web remote']['remote'])) {
+      $event = $info['rules web remote']['event'];
+      if (!$remote->isSubscribedTo($event)) {
+        $remote->subscribe($event);
+      }
+    }
   }
 }

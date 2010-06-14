@@ -92,6 +92,26 @@ function rules_web_remote_schema() {
       'name' => array('rules_web_remote' => 'name'),
     ),
   );
+  $schema['rules_web_remote_subscriptions'] = array(
+    'fields' => array(
+      'name' => array(
+        'type' => 'varchar',
+        'length' => '12',
+        'not null' => TRUE,
+        'description' => 'The name of the remote site.',
+      ),
+      'event' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'description' => 'An event of the remote site we are subscribed to.',
+      ),
+    ),
+    'primary key' => array('name', 'event'),
+    'foreign keys' => array(
+      'name' => array('rules_web_remote' => 'name'),
+    ),
+  );
   return $schema;
 }
 

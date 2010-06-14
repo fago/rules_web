@@ -79,6 +79,7 @@ class RulesWebRemote extends EntityDBExtendable {
 
   protected $endpoint = NULL;
   protected $info = array();
+  protected $subscriptions = array();
 
   function __construct($values = array(), $entity_type = 'rules_web_remote') {
     parent::__construct($values, $entity_type);
@@ -195,21 +196,32 @@ class RulesWebRemote extends EntityDBExtendable {
     $this->info = array();
   }
 
+  public function isSubscribedTo($event) {
+    return isset($this->subscriptions[$event]);
+  }
+
   /**
    * Subscribes to the given event, so we get event notitifcations whenever the
    * event occurs.
    */
   public function subscribe($event) {
-    try {
-      if (empty($this->info)) {
-        // Make sure the token is stored so it won't change in future.
-        $this->refreshInfo();
+    // Make sure the info is retrieved and thus the token is stored, so the
+    // token won't change in future. $this->events() does that for us.
+    if (($events = $this->events()) && isset($events[$event])) {
+      try {
+        $this->endpoint()->subscribe($event);
+        $this->subscriptions[$event] = TRUE;
+        db_merge('rules_web_remote_subscriptions')
+          ->key(array(
+            'name' => $this->name,
+            'event' => $event,
+          ))
+          ->execute();
       }
-      $this->endpoint()->subscribe($event);
-    }
-    catch (Exception $e) {
-      $args = array('%event' => $event, '%name' => $this->name, '%message' => $e->getMessage());
-      watchdog('rules remote', 'Error subscribing to event %event of remote site %name. Error message: %message.', $args, WATCHDOG_ERROR);
+      catch (Exception $e) {
+        $args = array('%event' => $event, '%name' => $this->name, '%message' => $e->getMessage());
+        watchdog('rules remote', 'Error subscribing to event %event of remote site %name. Error message: %message.', $args, WATCHDOG_ERROR);
+      }
     }
   }
 
@@ -219,6 +231,11 @@ class RulesWebRemote extends EntityDBExtendable {
   public function unsubscribe($event) {
     try {
       $this->endpoint()->unsubscribe($event);
+      unset($this->subscriptions[$event]);
+      db_delete('rules_web_remote_subscriptions')
+        ->condition('name', $this->name)
+        ->condition('event', $event)
+        ->execute();
     }
     catch (Exception $e) {
       $args = array('%event' => $event, '%name' => $this->name, '%message' => $e->getMessage());
@@ -241,6 +258,9 @@ class RulesWebRemote extends EntityDBExtendable {
       ->execute();
   }
 
+
+
+
   public function save() {
     parent::save();
     $this->storeInfo();
@@ -258,6 +278,15 @@ class RulesWebRemote extends EntityDBExtendable {
     foreach ($result as $record) {
       $remotes[$record->name]->info = unserialize($record->info);
       $remotes[$record->name]->token = $record->token;
+    }
+
+    // Load subscribed events.
+    $result = db_select('rules_web_remote_subscriptions', 'r')
+    ->fields('r')
+    ->condition('name', array(array_keys($remotes)))
+    ->execute();
+    foreach ($result as $record) {
+      $remotes[$record->name]->subscriptions[$record->event] = TRUE;
     }
   }
 }

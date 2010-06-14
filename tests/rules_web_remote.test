@@ -182,6 +182,27 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     $node = node_load($node->nid, NULL, TRUE);
     $this->assertEqual($node->title, 'bar', 'Reacted on remote event invoked via a HTTP notification.');
 
+    // As we have configured a rule for the event, we should have been
+    // auto-subscribed. Test that.
+
+    $return = db_select('rules_web_remote_subscriptions', 'r')
+      ->fields('r')
+      ->condition('name', $remote->name)
+      ->condition('event', 'test')
+      ->execute()->fetchAssoc();
+    $this->assertTrue($remote->isSubscribedTo('test') && $return['event'] == 'test', 'Remote site has tracked the subscription.');
+
+    // Unsubscribe for further testing and make sure the remote got that.
+    $remote->unsubscribe('test');
+    $return = db_select('rules_web_remote_subscriptions', 'r')
+      ->fields('r')
+      ->condition('name', $remote->name)
+      ->condition('event', 'test')
+      ->execute()->fetchAssoc();
+    $this->assertTrue(!$return && !$remote->isSubscribedTo('test'), 'Remote site has tracked the unsubscription.');
+
+
+
     // Test subcription service. Use directly the endpoint so if exceptions
     // occure simpletest can get them.
     $endpoint = $remote->call('endpoint');
