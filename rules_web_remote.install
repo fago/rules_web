@@ -115,4 +115,10 @@ function rules_web_remote_schema() {
   return $schema;
 }
 
-
+/**
+ * Update 70001: Creates the new db table rules_web_remote_subscriptions.
+ */
+function rules_web_remote_update_7001() {
+  $schema = drupal_get_schema('rules_web_remote_subscriptions');
+  db_create_table('rules_web_remote_subscriptions', $schema);
+}
