@@ -219,7 +219,7 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
     $node2 = $this->drupalCreateNode(array('type' => 'article', 'title' => 'foo2'));
     //rules_web_hook_invoke('test', array('node' => $node2));
     // Use the action to invoke the hook.
-    rules_action('web_hook_invoke', array('hook' => 'test'))->execute($node2);
+    rules_action('web_hook_invoke_test')->execute($node2);
 
     $node = node_load($node->nid, NULL, TRUE);
     $this->assertEqual($node->title, 'foo2', 'Sent event notification to subscriber and reacted.');
