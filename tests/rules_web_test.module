@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_default_rules_web_hook().
+ * Implements hook_default_rules_web_hook().
  */
 function rules_web_test_default_rules_web_hook() {
   $hook = new EntityDB(array(), 'rules_web_hook');
@@ -24,7 +24,7 @@ function rules_web_test_default_rules_web_hook() {
 }
 
 /**
- * Implementation of hook_default_rules_web_remote().
+ * Implements hook_default_rules_web_remote().
  */
 function rules_web_test_default_rules_web_remote() {
   $remote = new RulesWebRemote();

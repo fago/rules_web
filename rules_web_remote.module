@@ -144,7 +144,7 @@ function rules_web_remote_permission() {
  * Gets all defined remote endpoint types.
  */
 function rules_web_remote_get_types() {
-  return module_invoke_all('rules_endpoint_types');
+  return rules_fetch_data('endpoint_types');
 }
 
 /**
