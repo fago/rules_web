@@ -81,7 +81,7 @@ class RulesWebHooksTestCase extends DrupalWebTestCase {
       );
     }
     // Add the simpletest useragent so we connect to the testing instance.
-    if (preg_match('/simpletest\d+/', $GLOBALS['db_prefix'], $matches)) {
+    if (preg_match('/simpletest\d+/', $this->databasePrefix, $matches)) {
       $remote->settings['curl options'][CURLOPT_USERAGENT] = drupal_generate_test_ua($matches[0]);
     }
   }
